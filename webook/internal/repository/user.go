@@ -6,6 +6,9 @@ import (
 	"xws/webook/internal/repository/dao"
 )
 
+var ErrUserDuplicateEmail = dao.ErrUserDuplicateEmail
+//var ErrUserDuplicateEmailV1 = fmt.Errorf("%w 邮箱冲突", dao.ErrUserDuplicateEmail)
+
 type UserRepository struct{
 	dao *dao.UserDao
 

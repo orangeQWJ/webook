@@ -19,7 +19,7 @@ type UserHandler struct {
 func NewUserHandler(svc *service.UserService) *UserHandler {
 	const (
 		emailRegexPattern    = "^\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*$"
-		passwordRegexPattern = `^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,}$`
+		passwordRegexPattern = `^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,72}$`
 	)
 
 	emailExp := regexp2.MustCompile(emailRegexPattern, regexp2.None)
@@ -78,8 +78,13 @@ func (u *UserHandler) SignUp(ctx *gin.Context) {
 		Email:    req.Email,
 		Password: req.Password,
 	})
+	if err == service.ErrUserDuplicateEmail {
+		ctx.String(http.StatusOK, "邮箱冲突")
+		return
+	}
 	if err != nil {
 		ctx.String(http.StatusOK, "系统异常")
+		return
 	}
 
 	//fmt.Printf("%v", req)
