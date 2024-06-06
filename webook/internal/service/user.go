@@ -28,6 +28,7 @@ func(svc *UserService) SignUp(ctx context.Context, u domain.User) error{
 	hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 	u.Password = string(hash)
 	if err!= nil{
+		// log:加密失败
 		return err
 	}
 	return svc.repo.Create(ctx, u)

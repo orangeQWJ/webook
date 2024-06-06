@@ -25,6 +25,6 @@ func (r *UserRepository) Create(ctx context.Context, u domain.User) error{
 		Email: u.Email,
 		Password: u.Password,
 	})
-	// 在这里炒作缓存
+	// 在这里操作缓存
 }
 

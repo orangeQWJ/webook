@@ -18,15 +18,15 @@ func main() {
 	db := initDB()
 	server := initWebServer()
 
-	u:= initUser(db)
+	u := initUser(db)
 	u.RegisterRoutes(server)
 
 	server.Run(":8080")
 }
 
-
 func initDB() *gorm.DB {
-	db , err:= gorm.Open(mysql.Open("root:root@tcp(localhost:13316)/webook"))
+	// 连接数据库
+	db, err := gorm.Open(mysql.Open("root:root@tcp(localhost:13316)/webook"))
 	if err != nil {
 		// 只在初始化的过程中panic
 		// panic 整个goroutine结束
@@ -40,7 +40,7 @@ func initDB() *gorm.DB {
 	return db
 }
 
-func initUser(db * gorm.DB) *web.UserHandler{
+func initUser(db *gorm.DB) *web.UserHandler {
 	ud := dao.NewUserDao(db)
 	repo := repository.NewUserRepository(ud)
 	svc := service.NewUserService(repo)
@@ -48,7 +48,7 @@ func initUser(db * gorm.DB) *web.UserHandler{
 	return u
 }
 
-func initWebServer() *gin.Engine{
+func initWebServer() *gin.Engine {
 	server := gin.Default()
 	// 解决跨域请求
 	server.Use(cors.New(cors.Config{
@@ -60,7 +60,7 @@ func initWebServer() *gin.Engine{
 		AllowCredentials: true,
 		AllowOriginFunc: func(origin string) bool {
 			//return origin == "https://github.com"
-			if strings.HasPrefix(origin, "http://localhost"){
+			if strings.HasPrefix(origin, "http://localhost") {
 				return true
 			}
 			return strings.Contains(origin, "yourcompany.com")
@@ -68,5 +68,4 @@ func initWebServer() *gin.Engine{
 		MaxAge: 12 * time.Hour,
 	}))
 	return server
-
 }

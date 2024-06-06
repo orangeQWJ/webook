@@ -12,7 +12,7 @@ import (
 // UserHandler 我准备在它上面定义跟用户有关的路由
 type UserHandler struct {
 	svc         *service.UserService
-	emailExp    *regexp2.Regexp
+	emailExp    *regexp2.Regexp // 编译好的正则表达式
 	passwordExp *regexp2.Regexp
 }
 
@@ -43,14 +43,15 @@ func (u *UserHandler) SignUp(ctx *gin.Context) {
 	// Bind 方法会根据 Content-Type 来解析你的数据到 req 里面
 	// 解析错了，就会直接写回一个 400 的错误
 	if err := ctx.Bind(&req); err != nil {
+		// 前端的问题,前端传过来的应该是json格式
 		ctx.String(http.StatusOK, "解析错误")
 		return
 	}
 
+	// 检验邮箱格式
 	ok, err := u.emailExp.MatchString(req.Email)
 	if err != nil {
-		// 记录日志
-		ctx.String(http.StatusOK, "系统错误")
+		ctx.String(http.StatusOK, "正则匹配超时")
 		return
 	}
 	if !ok {
@@ -58,14 +59,16 @@ func (u *UserHandler) SignUp(ctx *gin.Context) {
 		return
 	}
 
+	// 检查两次密码是否一致
 	if req.ConfirmPassword != req.Password {
 		ctx.String(http.StatusOK, "两次密码不一致")
 		return
 	}
 
+	// 密码强度是否符合要求
 	ok, err = u.passwordExp.MatchString(req.Password)
 	if err != nil {
-		ctx.String(http.StatusOK, "系统错误")
+		ctx.String(http.StatusOK, "正则匹配超时")
 		return
 	}
 	if !ok {
@@ -73,7 +76,7 @@ func (u *UserHandler) SignUp(ctx *gin.Context) {
 		return
 	}
 
-	// 调用 scv方法
+	// 调用 scv方法, 尝试注册新用户
 	err = u.svc.SignUp(ctx, domain.User{
 		Email:    req.Email,
 		Password: req.Password,
