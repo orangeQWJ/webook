@@ -7,8 +7,11 @@ import (
 	"xws/webook/internal/repository/dao"
 	"xws/webook/internal/service"
 	"xws/webook/internal/web"
+	"xws/webook/internal/web/middleware"
 
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -67,5 +70,10 @@ func initWebServer() *gin.Engine {
 		},
 		MaxAge: 12 * time.Hour,
 	}))
+	store := cookie.NewStore([]byte("secret"))
+	server.Use(sessions.Sessions("mysession", store))
+
+	// to explain 为什么设计成链路调用
+	server.Use(middleware.NewLoginMiddlewareBuilder().IgnorePaths("/users/signup").IgnorePaths("/users/login").Build())
 	return server
 }

@@ -34,26 +34,26 @@ func (svc *UserService) SignUp(ctx context.Context, u domain.User) error {
 	return svc.repo.Create(ctx, u)
 }
 
-func (svc *UserService) Login(ctx context.Context, email, password string) error {
+func (svc *UserService) Login(ctx context.Context, email, password string) (domain.User, error) {
 	u, err := svc.repo.FindByEmail(ctx, email)
 	// 返回的错误
 	//	1. 没找到用户数据
 	//	2. 数据库未知错误
 	if err == repository.ErrUserNotFound {
-		return ErrInvalidUserOrPassword
+		return u, ErrInvalidUserOrPassword
 	}
 
 	// 2. 数据库未知错误
 	if err != nil {
-		return err
+		return u, err
 	}
 	// 顺利找到用户数据
 	// 比较密码
 	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
 	if err != nil {
-		return ErrInvalidUserOrPassword
+		return u, ErrInvalidUserOrPassword
 	}
-	return nil
+	return u, nil
 	// 返回的错误
 	// 1. 数据库未知错误
 	// 2. ErrInvalidUserOrPassword

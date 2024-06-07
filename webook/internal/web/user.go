@@ -6,6 +6,7 @@ import (
 	"xws/webook/internal/service"
 
 	"github.com/dlclark/regexp2"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
@@ -104,7 +105,7 @@ func (u *UserHandler) Login(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "解析错误")
 		return
 	}
-	err := u.svc.Login(ctx, req.Email, req.Password)
+	user, err := u.svc.Login(ctx, req.Email, req.Password)
 	if err == service.ErrInvalidUserOrPassword {
 		ctx.String(http.StatusOK, "用户名或密码错误")
 		return
@@ -113,12 +114,18 @@ func (u *UserHandler) Login(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "系统错误")
 		return
 	}
+	// 从当前请求上下文ctx中获取默认的会话对象
+	// Gin 框架中每个ctx上下文都有一份会化数据.
+	sess := sessions.Default(ctx)
+	sess.Set("userId", user.Id)
+	sess.Save()
 	ctx.String(http.StatusOK, "登录成功")
 	return
 }
-func (u *UserHandler) Edit(ctx *gin.Context)    {}
-func (u *UserHandler) Profile(ctx *gin.Context) {}
-
+func (u *UserHandler) Edit(ctx *gin.Context) {}
+func (u *UserHandler) Profile(ctx *gin.Context) {
+	ctx.String(http.StatusOK, "这是你的Profile")
+}
 func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
 	ug := server.Group("/users")
 	ug.POST("/signup", u.SignUp)
