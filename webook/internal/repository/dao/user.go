@@ -49,14 +49,30 @@ func (dao *UserDao) FindByEmail(ctx context.Context, email string) (User, error)
 	return u, err
 }
 
+func (dao *UserDao) FindById(ctx context.Context, id int64) (User, error) {
+	var u User
+	//err := dao.db.WithContext(ctx).First(&u, "email = ?", email).Error
+	err := dao.db.WithContext(ctx).Where("id = ?", id).First(&u).Error
+	// err 数据没找到/数据库出错
+	return u, err
+}
+
+func (dao *UserDao) UpdateProfile(ctx context.Context, u User) error {
+	result := dao.db.Model(&User{}).Where("id = ?", u.Id).Update("Nickname", u.Nickname)
+	result = dao.db.Model(&User{}).Where("id = ?", u.Id).Update("AboutMe", u.AboutMe)
+	result = dao.db.Model(&User{}).Where("id = ?", u.Id).Update("Birthday", u.Birthday)
+	return result.Error
+}
+
 // User 直接对应数据库表结构
 // 有些人叫做 entity / model / po (persistent object)
 type User struct {
 	Id       int64  `gorm:"primaryKey, autoIncrement"`
 	Email    string `gorm:"unique"`
-	Password string
-	// 创建时间
-	Ctime int64
-	// 更新时间
-	Utime int64
+	Password string // 创建时间
+	Ctime    int64  // 更新时间
+	Utime    int64
+	Nickname string
+	Birthday string
+	AboutMe  string
 }

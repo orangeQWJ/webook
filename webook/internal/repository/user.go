@@ -28,6 +28,22 @@ func (r *UserRepository) Create(ctx context.Context, u domain.User) error {
 	})
 	// 在这里操作缓存
 }
+func (r *UserRepository) FindById(ctx context.Context, uId int64) (domain.User, error) {
+	u, err := r.dao.FindById(ctx, uId)
+	if err == dao.ErrUserNotFound { // 没找到数据,但是是因为缺少数据行
+		return domain.User{}, ErrUserNotFound
+	}
+	if err != nil { // 发生错误,但是不是数据缺失错误
+		return domain.User{}, err
+	}
+	// 根据email索引找到了数据
+	return domain.User{
+		Id:       u.Id,
+		Nickname: u.Nickname,
+		Birthday: u.Birthday,
+		AboutMe: u.AboutMe,
+	}, nil
+}
 
 func (r *UserRepository) FindByEmail(ctx context.Context, email string) (domain.User, error) {
 	u, err := r.dao.FindByEmail(ctx, email)
@@ -49,4 +65,13 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string) (domain.
 	// 返回的错误
 	//	1. 没找到用户数据
 	//	2. 数据库未知错误
+}
+
+func (r *UserRepository) UpdateProfile(ctx context.Context, u domain.User)  error {
+	return r.dao.UpdateProfile(ctx, dao.User{
+		Id: u.Id,
+		Nickname: u.Nickname,
+		Birthday: u.Birthday,
+		AboutMe: u.AboutMe,
+	})
 }

@@ -58,3 +58,11 @@ func (svc *UserService) Login(ctx context.Context, email, password string) (doma
 	// 1. 数据库未知错误
 	// 2. ErrInvalidUserOrPassword
 }
+
+func (svc *UserService) ShowProfile(ctx context.Context, uId int64) (domain.User, error) {
+	return svc.repo.FindById(ctx, uId)
+}
+
+func (svc *UserService) EditProfile(ctx context.Context, u domain.User) error {
+	return svc.repo.UpdateProfile(ctx, u)
+}

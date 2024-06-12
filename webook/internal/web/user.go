@@ -1,6 +1,7 @@
 package web
 
 import (
+	"fmt"
 	"net/http"
 	"xws/webook/internal/domain"
 	"xws/webook/internal/service"
@@ -15,21 +16,25 @@ type UserHandler struct {
 	svc         *service.UserService
 	emailExp    *regexp2.Regexp // 编译好的正则表达式
 	passwordExp *regexp2.Regexp
+	birthdayExp *regexp2.Regexp
 }
 
 func NewUserHandler(svc *service.UserService) *UserHandler {
 	const (
 		emailRegexPattern    = "^\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*$"
 		passwordRegexPattern = `^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,72}$`
+		birthdayRegexPattern = `^\d{4}-\d{2}-\d{2}$`
 	)
 
 	emailExp := regexp2.MustCompile(emailRegexPattern, regexp2.None)
 	passwordExp := regexp2.MustCompile(passwordRegexPattern, regexp2.None)
+	birthdayExp := regexp2.MustCompile(birthdayRegexPattern, regexp2.None)
 
 	return &UserHandler{
 		svc:         svc,
 		emailExp:    emailExp,
 		passwordExp: passwordExp,
+		birthdayExp: birthdayExp,
 	}
 }
 
@@ -122,9 +127,72 @@ func (u *UserHandler) Login(ctx *gin.Context) {
 	ctx.String(http.StatusOK, "登录成功")
 	return
 }
-func (u *UserHandler) Edit(ctx *gin.Context) {}
+func (u *UserHandler) Edit(ctx *gin.Context) {
+	//{nickname: "qwj", birthday: "2024-06-12", aboutMe: "NB"}
+	type EditReq struct {
+		Nickname string `json:"nickname"`
+		Birthday string `json:"birthday"`
+		AboutMe  string `json:"aboutMe"`
+	}
+	var req EditReq
+	if err := ctx.Bind(&req); err != nil {
+		ctx.String(http.StatusOK, "解析错误")
+		return
+	}
+	fmt.Println(req)
+	ok, err := u.birthdayExp.MatchString(req.Birthday)
+	if err != nil {
+		ctx.String(http.StatusOK, "正则匹配超时")
+		return
+	}
+	if !ok {
+		ctx.String(http.StatusOK, "生日格式不对")
+		return
+	}
+	if len(req.Nickname) > 16 {
+		ctx.String(http.StatusOK, "昵称长度不得超过16")
+		return
+	}
+	if len(req.AboutMe) > 50 {
+		ctx.String(http.StatusOK, "简介长度不得超过50")
+		return
+	}
+	sess := sessions.Default(ctx)
+	userId := sess.Get("userId")
+	userIdInt, ok := userId.(int64)
+	if !ok {
+		ctx.String(http.StatusOK, "未登录")
+		return
+	}
+	userInfo := domain.User{
+		Id:       userIdInt,
+		Nickname: req.Nickname,
+		Birthday: req.Birthday,
+		AboutMe:  req.AboutMe,
+	}
+	err = u.svc.EditProfile(ctx, userInfo)
+	if err != nil {
+		ctx.String(http.StatusOK, "更新资料时出错")
+		return
+	}
+	ctx.String(http.StatusOK, "更新profile成功")
+	return
+}
+
 func (u *UserHandler) Profile(ctx *gin.Context) {
-	ctx.String(http.StatusOK, "这是你的Profile")
+	sess := sessions.Default(ctx)
+	userId := sess.Get("userId")
+	userIdInt, ok := userId.(int64)
+	if !ok {
+		ctx.String(http.StatusOK, "未登录")
+		return
+	}
+	userInfo, err := u.svc.ShowProfile(ctx, userIdInt)
+	if err != nil {
+		ctx.String(http.StatusOK, "系统错误")
+	}
+	ctx.String(http.StatusOK, "Nickname: %s",userInfo)
+	return 
 }
 func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
 	ug := server.Group("/users")
