@@ -123,10 +123,24 @@ func (u *UserHandler) Login(ctx *gin.Context) {
 	// Gin 框架中每个ctx上下文都有一份会化数据.
 	sess := sessions.Default(ctx)
 	sess.Set("userId", user.Id)
+	sess.Options(sessions.Options{
+		//Secure: true,
+		//Path: "/users/edit",
+		MaxAge: 60 * 5,
+	})
 	sess.Save()
 	ctx.String(http.StatusOK, "登录成功")
 	return
 }
+func (u *UserHandler) Logout(ctx *gin.Context) {
+	sess := sessions.Default(ctx)
+	sess.Options(sessions.Options{
+		MaxAge: -1,
+	})
+	sess.Save()
+	ctx.String(http.StatusOK, "退出登录")
+}
+
 func (u *UserHandler) Edit(ctx *gin.Context) {
 	//{nickname: "qwj", birthday: "2024-06-12", aboutMe: "NB"}
 	type EditReq struct {
@@ -191,8 +205,8 @@ func (u *UserHandler) Profile(ctx *gin.Context) {
 	if err != nil {
 		ctx.String(http.StatusOK, "系统错误")
 	}
-	ctx.String(http.StatusOK, "Nickname: %s",userInfo)
-	return 
+	ctx.String(http.StatusOK, "Nickname: %s", userInfo)
+	return
 }
 func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
 	ug := server.Group("/users")
