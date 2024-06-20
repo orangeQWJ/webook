@@ -69,9 +69,9 @@ func (dao *UserDao) UpdateProfile(ctx context.Context, u User) error {
 type User struct {
 	Id       int64  `gorm:"primaryKey, autoIncrement"`
 	Email    string `gorm:"unique"`
-	Password string // 创建时间
-	Ctime    int64  // 更新时间
-	Utime    int64
+	Password string
+	Ctime    int64 // 创建时间
+	Utime    int64 // 更新时间
 	Nickname string
 	Birthday string
 	AboutMe  string

@@ -57,9 +57,12 @@ func initWebServer() *gin.Engine {
 	server.Use(cors.New(cors.Config{
 		//AllowOrigins: []string{"http://localhost:3000"},
 		AllowMethods: []string{"POST", "GET"},
+		// 允许前端发送的字段
 		AllowHeaders: []string{"authorization", "content-type"},
 		//ExposeHeaders:    []string{"authorization", "content-type"},
 		//authorization,content-type
+		// 不加这个,前端拿不到
+		ExposeHeaders: []string{"x-jwt-token"},
 		AllowCredentials: true,
 		AllowOriginFunc: func(origin string) bool {
 			//return origin == "https://github.com"
@@ -78,6 +81,7 @@ func initWebServer() *gin.Engine {
 	server.Use(sessions.Sessions("mysession", store))
 
 	// to explain 为什么设计成链路调用
-	server.Use(middleware.NewLoginMiddlewareBuilder().IgnorePaths("/users/signup").IgnorePaths("/users/login").Build())
+	//server.Use(middleware.NewLoginMiddlewareBuilder().IgnorePaths("/users/signup").IgnorePaths("/users/login").Build())
+	server.Use(middleware.NewLoginJwtMiddlewareBuilder().IgnorePaths("/users/signup").IgnorePaths("/users/login").Build())
 	return server
 }

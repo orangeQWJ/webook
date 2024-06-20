@@ -9,6 +9,7 @@ import (
 	"github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	jwt "github.com/golang-jwt/jwt/v5"
 )
 
 // UserHandler 我准备在它上面定义跟用户有关的路由
@@ -115,7 +116,7 @@ func (u *UserHandler) Login(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "用户名或密码错误")
 		return
 	}
-	if err != nil { //数据未知错误
+	if err != nil { //数据库错误
 		ctx.String(http.StatusOK, "系统错误")
 		return
 	}
@@ -130,6 +131,43 @@ func (u *UserHandler) Login(ctx *gin.Context) {
 	})
 	sess.Save()
 	ctx.String(http.StatusOK, "登录成功")
+	return
+}
+
+func (u *UserHandler) LoginJWT(ctx *gin.Context) {
+	type LoginReq struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	var req LoginReq
+	if err := ctx.Bind(&req); err != nil {
+		ctx.String(http.StatusOK, "解析错误")
+		return
+	}
+	user, err := u.svc.Login(ctx, req.Email, req.Password)
+	if err == service.ErrInvalidUserOrPassword {
+		ctx.String(http.StatusOK, "用户名或密码错误")
+		return
+	}
+	if err != nil { //数据未知错误
+		ctx.String(http.StatusOK, "系统错误")
+		return
+	}
+	// 用户账户密码正确
+	// 在这里用JWT 设置登录态
+	// 生成一个token
+	fmt.Println(user)
+	token := jwt.New(jwt.SigningMethodHS512)
+	tokenStr, err := token.SignedString([]byte("95osj3fUD7fo0mlYdDbncXz4VD2igvf0"))
+	if err != nil{
+		fmt.Println("jwt 系统错误")
+		fmt.Println(err)
+		ctx.String(http.StatusInternalServerError, "系统错误")
+		return
+	}
+	//fmt.Println(tokenStr)
+	ctx.Header("x-jwt-token", tokenStr)
+	ctx.String(http.StatusOK, "登录成功:%s", tokenStr)
 	return
 }
 func (u *UserHandler) Logout(ctx *gin.Context) {
@@ -194,6 +232,7 @@ func (u *UserHandler) Edit(ctx *gin.Context) {
 }
 
 func (u *UserHandler) Profile(ctx *gin.Context) {
+	/*
 	sess := sessions.Default(ctx)
 	userId := sess.Get("userId")
 	userIdInt, ok := userId.(int64)
@@ -201,6 +240,7 @@ func (u *UserHandler) Profile(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "未登录")
 		return
 	}
+	*/
 	userInfo, err := u.svc.ShowProfile(ctx, userIdInt)
 	if err != nil {
 		ctx.String(http.StatusOK, "系统错误")
@@ -211,7 +251,8 @@ func (u *UserHandler) Profile(ctx *gin.Context) {
 func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
 	ug := server.Group("/users")
 	ug.POST("/signup", u.SignUp)
-	ug.POST("/login", u.Login)
+	//ug.POST("/login", u.Login)
+	ug.POST("/login", u.LoginJWT)
 	ug.POST("/edit", u.Edit)
 	ug.GET("/profile", u.Profile)
 }
