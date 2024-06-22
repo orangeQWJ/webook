@@ -24,7 +24,6 @@ func (l *LoginJwtMiddlewareBuilder) IgnorePaths(path string) *LoginJwtMiddleware
 	l.paths = append(l.paths, path)
 	return l
 }
-
 func (l *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		for _, path := range l.paths {
