@@ -62,7 +62,7 @@ func initWebServer() *gin.Engine {
 		//ExposeHeaders:    []string{"authorization", "content-type"},
 		//authorization,content-type
 		// 不加这个,前端拿不到
-		ExposeHeaders: []string{"x-jwt-token"},
+		ExposeHeaders:    []string{"x-jwt-token"},
 		AllowCredentials: true,
 		AllowOriginFunc: func(origin string) bool {
 			//return origin == "https://github.com"

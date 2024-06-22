@@ -156,10 +156,15 @@ func (u *UserHandler) LoginJWT(ctx *gin.Context) {
 	// 用户账户密码正确
 	// 在这里用JWT 设置登录态
 	// 生成一个token
+	claims := UserClaims{
+		Uid: user.Id,
+	}
+
 	fmt.Println(user)
-	token := jwt.New(jwt.SigningMethodHS512)
+	//token := jwt.New(jwt.SigningMethodHS512)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
 	tokenStr, err := token.SignedString([]byte("95osj3fUD7fo0mlYdDbncXz4VD2igvf0"))
-	if err != nil{
+	if err != nil {
 		fmt.Println("jwt 系统错误")
 		fmt.Println(err)
 		ctx.String(http.StatusInternalServerError, "系统错误")
@@ -167,9 +172,11 @@ func (u *UserHandler) LoginJWT(ctx *gin.Context) {
 	}
 	//fmt.Println(tokenStr)
 	ctx.Header("x-jwt-token", tokenStr)
-	ctx.String(http.StatusOK, "登录成功:%s", tokenStr)
+	//ctx.String(http.StatusOK, "登录成功:%s", tokenStr)
+	ctx.String(http.StatusOK, "登录成功")
 	return
 }
+
 func (u *UserHandler) Logout(ctx *gin.Context) {
 	sess := sessions.Default(ctx)
 	sess.Options(sessions.Options{
@@ -231,8 +238,63 @@ func (u *UserHandler) Edit(ctx *gin.Context) {
 	return
 }
 
+func (u *UserHandler) EditJWT(ctx *gin.Context) {
+	//{nickname: "qwj", birthday: "2024-06-12", aboutMe: "NB"}
+	type EditReq struct {
+		Nickname string `json:"nickname"`
+		Birthday string `json:"birthday"`
+		AboutMe  string `json:"aboutMe"`
+	}
+	var req EditReq
+	if err := ctx.Bind(&req); err != nil {
+		ctx.String(http.StatusOK, "解析错误")
+		return
+	}
+	fmt.Println(req)
+	ok, err := u.birthdayExp.MatchString(req.Birthday)
+	if err != nil {
+		ctx.String(http.StatusOK, "正则匹配超时")
+		return
+	}
+	if !ok {
+		ctx.String(http.StatusOK, "生日格式不对")
+		return
+	}
+	if len(req.Nickname) > 16 {
+		ctx.String(http.StatusOK, "昵称长度不得超过16")
+		return
+	}
+	if len(req.AboutMe) > 50 {
+		ctx.String(http.StatusOK, "简介长度不得超过50")
+		return
+	}
+	c, exists := ctx.Get("claims")
+	if !exists {
+		//	预期之外,添加监控
+		ctx.String(http.StatusOK, "%s", "系统错误")
+		return
+	}
+	claims, ok := c.(*UserClaims)
+	if !ok {
+		//	预期之外,添加监控
+		ctx.String(http.StatusOK, "%s", "系统错误")
+		return
+	}
+	userInfo := domain.User{
+		Id:       claims.Uid,
+		Nickname: req.Nickname,
+		Birthday: req.Birthday,
+		AboutMe:  req.AboutMe,
+	}
+	err = u.svc.EditProfile(ctx, userInfo)
+	if err != nil {
+		ctx.String(http.StatusOK, "更新资料时出错")
+		return
+	}
+	ctx.String(http.StatusOK, "更新profile成功")
+	return
+}
 func (u *UserHandler) Profile(ctx *gin.Context) {
-	/*
 	sess := sessions.Default(ctx)
 	userId := sess.Get("userId")
 	userIdInt, ok := userId.(int64)
@@ -240,7 +302,6 @@ func (u *UserHandler) Profile(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "未登录")
 		return
 	}
-	*/
 	userInfo, err := u.svc.ShowProfile(ctx, userIdInt)
 	if err != nil {
 		ctx.String(http.StatusOK, "系统错误")
@@ -248,11 +309,61 @@ func (u *UserHandler) Profile(ctx *gin.Context) {
 	ctx.String(http.StatusOK, "Nickname: %s", userInfo)
 	return
 }
+
+func (u *UserHandler) ProfileJWT(ctx *gin.Context) {
+	/*
+		tokenHeader := ctx.GetHeader("Authorization")
+		if tokenHeader == "" {
+			ctx.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+		segs := strings.Split(tokenHeader, " ")
+		if len(segs) != 2 {
+			ctx.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+		tokenStr := segs[1]
+		claims := &UserClaims{}
+		jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {
+			return []byte("95osj3fUD7fo0mlYdDbncXz4VD2igvf0"), nil
+		})
+		claims := claims.Uid
+	*/
+	c, exists := ctx.Get("claims")
+	if !exists {
+		//	预期之外,添加监控
+		ctx.String(http.StatusOK, "%s", "系统错误")
+		return
+	}
+	claims, ok := c.(*UserClaims)
+	if !ok {
+		//	预期之外,添加监控
+		ctx.String(http.StatusOK, "%s", "系统错误")
+		return
+	}
+	userInfo, err := u.svc.ShowProfile(ctx, claims.Uid)
+	if err != nil {
+		ctx.String(http.StatusOK, "系统错误")
+		return
+	}
+	ctx.String(http.StatusOK, "%s", userInfo)
+	return
+}
+
 func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
 	ug := server.Group("/users")
 	ug.POST("/signup", u.SignUp)
 	//ug.POST("/login", u.Login)
 	ug.POST("/login", u.LoginJWT)
-	ug.POST("/edit", u.Edit)
-	ug.GET("/profile", u.Profile)
+	ug.POST("/edit", u.EditJWT)
+	//ug.GET("/profile", u.Profile)
+	ug.GET("/profile", u.ProfileJWT)
+}
+
+type UserClaims struct {
+	jwt.RegisteredClaims
+	// 声明你自己要放进token里的数据
+	Uid int64
+	// 自己随便加
+	// 敏感信息不要加
 }

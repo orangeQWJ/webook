@@ -10,7 +10,7 @@ import (
 
 // 定义模型
 type Product struct {
-	ID    uint   `gorm:"primaryKey"`
+	ID    uint `gorm:"primaryKey"`
 	Code  string
 	Price uint
 }

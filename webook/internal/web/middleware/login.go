@@ -57,7 +57,7 @@ func (l *LoginMiddlewareBuilder) Build() gin.HandlerFunc {
 			ctx.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
-		if now - updateTimeVal > 60 * 1000 {
+		if now-updateTimeVal > 60*1000 {
 			sess.Set("update_time", now)
 			sess.Options(sessions.Options{
 				MaxAge: 60 * 5,

@@ -41,7 +41,7 @@ func (r *UserRepository) FindById(ctx context.Context, uId int64) (domain.User, 
 		Id:       u.Id,
 		Nickname: u.Nickname,
 		Birthday: u.Birthday,
-		AboutMe: u.AboutMe,
+		AboutMe:  u.AboutMe,
 	}, nil
 }
 
@@ -67,11 +67,11 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string) (domain.
 	//	2. 数据库未知错误
 }
 
-func (r *UserRepository) UpdateProfile(ctx context.Context, u domain.User)  error {
+func (r *UserRepository) UpdateProfile(ctx context.Context, u domain.User) error {
 	return r.dao.UpdateProfile(ctx, dao.User{
-		Id: u.Id,
+		Id:       u.Id,
 		Nickname: u.Nickname,
 		Birthday: u.Birthday,
-		AboutMe: u.AboutMe,
+		AboutMe:  u.AboutMe,
 	})
 }
