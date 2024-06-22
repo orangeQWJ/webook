@@ -3,6 +3,7 @@ package web
 import (
 	"fmt"
 	"net/http"
+	"time"
 	"xws/webook/internal/domain"
 	"xws/webook/internal/service"
 
@@ -157,6 +158,9 @@ func (u *UserHandler) LoginJWT(ctx *gin.Context) {
 	// 在这里用JWT 设置登录态
 	// 生成一个token
 	claims := UserClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute)),
+		},
 		Uid: user.Id,
 	}
 
