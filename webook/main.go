@@ -8,11 +8,16 @@ import (
 	"xws/webook/internal/service"
 	"xws/webook/internal/web"
 	"xws/webook/internal/web/middleware"
+	"xws/webook/pkg/ginx/middlewares/ratelimit"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/redis"
+	"github.com/gin-contrib/sessions/memstore"
 	"github.com/gin-gonic/gin"
+
+	//"github.com/quasoft/memstore"
+
+	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -53,6 +58,13 @@ func initUser(db *gorm.DB) *web.UserHandler {
 
 func initWebServer() *gin.Engine {
 	server := gin.Default()
+	
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: "localhost:6379",
+	})
+	// 一分钟100次
+	server.Use(ratelimit.NewBuilder(redisClient, time.Minute, 100).Build())
+
 	// 解决跨域请求
 	server.Use(cors.New(cors.Config{
 		//AllowOrigins: []string{"http://localhost:3000"},
@@ -74,10 +86,13 @@ func initWebServer() *gin.Engine {
 		MaxAge: 12 * time.Hour,
 	}))
 	//store := cookie.NewStore([]byte("secret"))
-	store, err := redis.NewStore(16, "tcp", "localhost:6379", "", []byte("qiwenju"))
+	/*
+	store, err := redis.NewStore(15, "tcp", "localhost:6379", "", []byte("qiwenju"))
 	if err != nil {
 		panic(err)
 	}
+	*/
+	store := memstore.NewStore([]byte("qiwenju")) 
 	server.Use(sessions.Sessions("mysession", store))
 
 	// to explain 为什么设计成链路调用

@@ -162,6 +162,7 @@ func (u *UserHandler) LoginJWT(ctx *gin.Context) {
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute)),
 		},
 		Uid: user.Id,
+		UserAgent: ctx.Request.UserAgent(),
 	}
 
 	fmt.Println(user)
@@ -370,4 +371,5 @@ type UserClaims struct {
 	Uid int64
 	// 自己随便加
 	// 敏感信息不要加
+	UserAgent string
 }
