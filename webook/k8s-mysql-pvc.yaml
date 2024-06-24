@@ -1,0 +1,20 @@
+# pvc => PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  #  这个是指我 mysql 要用的东西?  pod?
+  name: webook-mysql-claim
+spec:
+  #  pvc 与 pv 通过这个字段建立联系
+  storageClassName: suibian
+  accessModes:
+    #    一个人？一个线程？还是一个POD？还是一个数据库用户？读写 
+    - ReadWriteOnce # 只能被挂载到一个pod, 被pod读写
+  #    多个读，一个写
+  #    - ReadOnlyMany # 可以被挂载到多个pod, 只能读
+  #    - 多个读写
+  #    - ReadWriteMany # 可以被挂载到过个pod, 可读可写
+  resources:
+    requests:
+      #      1 GB
+      storage: 1Gi

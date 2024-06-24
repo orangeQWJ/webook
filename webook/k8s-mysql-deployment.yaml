@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webook-mysql
+  labels:
+    app: webook-mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webook-mysql
+  template:
+    metadata:
+      name: webook-mysql
+      labels:
+        app: webook-mysql
+    spec:
+      containers:
+        - name: webook-mysql
+          image: mysql:8.0
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: root
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            #这边要对应到 mysql 的数据存储的位置
+            #通过 MySQL 的配置可以改这个目录
+            - mountPath: /var/lib/mysql
+              # 我 POD 里面有那么多 volumes，我要用哪个
+              name: mysql-storage
+          ports:
+            - containerPort: 3306
+        #- name: webook-live-hadoop
+      restartPolicy: Always
+      # 我整个 POD 有哪些
+      volumes:
+        - name: mysql-storage
+          persistentVolumeClaim:
+            # 通过这个字段与pvc建立联系
+            claimName: webook-mysql-claim
+        #- name: hadoop-storage
+          #persistentVolumeClaim:
+            #claimName: webook-hadoop-live-claim
