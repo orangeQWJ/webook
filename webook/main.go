@@ -24,7 +24,6 @@ import (
 )
 
 func main() {
-	/*
 	db := initDB()
 	server := initWebServer()
 
@@ -32,17 +31,19 @@ func main() {
 	u.RegisterRoutes(server)
 
 	server.Run(":8080")
-	*/
-	server := gin.Default()
+	//server := gin.Default()
+
 	server.GET("/hello", func(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "hello!!!!!!!!!!")
 	})
+
 	server.Run(":8080")
 }
 
 func initDB() *gorm.DB {
 	// 连接数据库
-	db, err := gorm.Open(mysql.Open("root:root@tcp(localhost:13316)/webook"))
+	//db, err := gorm.Open(mysql.Open("root:root@tcp(localhost:13316)/webook"))
+	db, err := gorm.Open(mysql.Open("root:root@tcp(webook-mysql:11309)/webook"))
 	if err != nil {
 		// 只在初始化的过程中panic
 		// panic 整个goroutine结束
@@ -68,7 +69,8 @@ func initWebServer() *gin.Engine {
 	server := gin.Default()
 	
 	redisClient := redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
+		//Addr: "localhost:6379",
+		Addr: "webook-redis:11479",
 	})
 	// 一分钟100次
 	server.Use(ratelimit.NewBuilder(redisClient, time.Minute, 100).Build())
