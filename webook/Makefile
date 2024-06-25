@@ -18,3 +18,6 @@ k8s:
 	@kubectl apply -f ./k8s-redis-deployment.yaml
 	@kubectl apply -f ./k8s-redis-service.yaml
 	@kubectl apply -f ./k8s-ingress-nginx.yaml
+
+run: docker k8s
+
