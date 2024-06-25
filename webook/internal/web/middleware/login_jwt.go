@@ -73,10 +73,10 @@ func (l *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 
 		now := time.Now()
 		// 每十秒刷新一次
-		if claims.ExpiresAt.Sub(now) < time.Second*50 {
+		if claims.ExpiresAt.Sub(now) < time.Minute*20 {
 			newClaims := web.UserClaims{
 				RegisteredClaims: jwt.RegisteredClaims{
-					ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute)),
+					ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute*30)),
 				},
 				Uid: claims.Uid,
 				UserAgent: ctx.Request.UserAgent(),
