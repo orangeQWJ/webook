@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"xws/webook/config"
 	"xws/webook/internal/repository"
 	"xws/webook/internal/repository/dao"
 	"xws/webook/internal/service"
@@ -43,7 +44,8 @@ func main() {
 func initDB() *gorm.DB {
 	// 连接数据库
 	//db, err := gorm.Open(mysql.Open("root:root@tcp(localhost:13316)/webook"))
-	db, err := gorm.Open(mysql.Open("root:root@tcp(webook-mysql:11309)/webook"))
+	//db, err := gorm.Open(mysql.Open("root:root@tcp(webook-mysql:11309)/webook"))
+	db, err := gorm.Open(mysql.Open(config.Config.DB.DSN))
 	if err != nil {
 		// 只在初始化的过程中panic
 		// panic 整个goroutine结束
@@ -70,7 +72,8 @@ func initWebServer() *gin.Engine {
 	
 	redisClient := redis.NewClient(&redis.Options{
 		//Addr: "localhost:6379",
-		Addr: "webook-redis:11479",
+		//Addr: "webook-redis:11479",
+		Addr: config.Config.Redis.Addr,
 	})
 	// 一分钟100次
 	server.Use(ratelimit.NewBuilder(redisClient, time.Minute, 100).Build())

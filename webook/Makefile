@@ -3,11 +3,12 @@
 docker:
 	@rm webook || true
 	@go mod tidy
-	@GOOS=linux GOARCH=arm go build -o webook .
+	@GOOS=linux GOARCH=arm go build -tags=k8s -o webook .
 	@docker rmi -f  orangeqwj/webook:v0.0.1 
 	@docker build -t orangeqwj/webook:v0.0.1 .
 
 k8s:
+	@kubectl delete deployment webook
 	@kubectl apply -f ./k8s-webook-deployment.yaml
 	@kubectl apply -f ./k8s-webook-service.yaml 
 	@kubectl apply -f ./k8s-mysql-deployment.yaml
