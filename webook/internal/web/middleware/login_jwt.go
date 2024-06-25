@@ -79,6 +79,7 @@ func (l *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 					ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute)),
 				},
 				Uid: claims.Uid,
+				UserAgent: ctx.Request.UserAgent(),
 			}
 			//claims.ExpiresAt =  jwt.NewNumericDate(time.Now().Add(time.Minute)),
 			newToken := jwt.NewWithClaims(jwt.SigningMethodHS512, newClaims)
