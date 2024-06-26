@@ -14,6 +14,7 @@ var ErrInvalidUserOrPassword = errors.New("账号/邮箱或密码不对")
 
 type UserService struct {
 	repo *repository.UserRepository
+	//redis *redis.Client
 }
 
 func NewUserService(repo *repository.UserRepository) *UserService {
@@ -61,6 +62,7 @@ func (svc *UserService) Login(ctx context.Context, email, password string) (doma
 
 func (svc *UserService) ShowProfile(ctx context.Context, uId int64) (domain.User, error) {
 	return svc.repo.FindById(ctx, uId)
+	//return svc.repo.FindByIdWithoutCache(ctx, uId)
 }
 
 func (svc *UserService) EditProfile(ctx context.Context, u domain.User) error {

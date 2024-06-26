@@ -60,4 +60,3 @@ func (b *Builder) limit(ctx *gin.Context) (bool, error) {
 	return b.cmd.Eval(ctx, luaScript, []string{key},
 		b.interval.Milliseconds(), b.rate, time.Now().UnixMilli()).Bool()
 }
-

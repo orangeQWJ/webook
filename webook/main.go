@@ -6,6 +6,7 @@ import (
 	"time"
 	"xws/webook/config"
 	"xws/webook/internal/repository"
+	"xws/webook/internal/repository/cache"
 	"xws/webook/internal/repository/dao"
 	"xws/webook/internal/service"
 	"xws/webook/internal/web"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 
 	//"github.com/quasoft/memstore"
 
@@ -57,7 +59,10 @@ func initDB() *gorm.DB {
 
 func initUser(db *gorm.DB) *web.UserHandler {
 	ud := dao.NewUserDao(db)
-	repo := repository.NewUserRepository(ud)
+	ucahce := cache.NewUserCache(redis.NewClient(&redis.Options{
+		Addr: config.Config.Redis.Addr,
+	}))
+	repo := repository.NewUserRepository(ud, ucahce)
 	svc := service.NewUserService(repo)
 	u := web.NewUserHandler(svc)
 	return u
@@ -65,7 +70,7 @@ func initUser(db *gorm.DB) *web.UserHandler {
 
 func initWebServer() *gin.Engine {
 	server := gin.Default()
-	
+
 	/*压力测试,暂时关闭速率限制
 	redisClient := redis.NewClient(&redis.Options{
 		//Addr: "localhost:6379",
@@ -98,13 +103,13 @@ func initWebServer() *gin.Engine {
 	}))
 	//store := cookie.NewStore([]byte("secret"))
 	/*
-	store, err := redis.NewStore(15, "tcp", "localhost:6379", "", []byte("qiwenju"))
-	if err != nil {
-		panic(err)
-	}
+		store, err := redis.NewStore(15, "tcp", "localhost:6379", "", []byte("qiwenju"))
+		if err != nil {
+			panic(err)
+		}
 	*/
 	/*seesion, 压力测试,暂时关闭
-	store := memstore.NewStore([]byte("qiwenju")) 
+	store := memstore.NewStore([]byte("qiwenju"))
 	server.Use(sessions.Sessions("mysession", store))
 	*/
 

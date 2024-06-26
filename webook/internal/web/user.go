@@ -161,7 +161,7 @@ func (u *UserHandler) LoginJWT(ctx *gin.Context) {
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
 		},
-		Uid: user.Id,
+		Uid:       user.Id,
 		UserAgent: ctx.Request.UserAgent(),
 	}
 
@@ -348,7 +348,7 @@ func (u *UserHandler) ProfileJWT(ctx *gin.Context) {
 	}
 	userInfo, err := u.svc.ShowProfile(ctx, claims.Uid)
 	if err != nil {
-		ctx.String(http.StatusOK, "系统错误")
+		ctx.String(http.StatusOK, "mysql/redis错误")
 		return
 	}
 	ctx.String(http.StatusOK, "%s", userInfo)

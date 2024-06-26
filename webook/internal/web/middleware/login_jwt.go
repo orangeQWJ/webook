@@ -76,9 +76,9 @@ func (l *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 		if claims.ExpiresAt.Sub(now) < time.Minute*20 {
 			newClaims := web.UserClaims{
 				RegisteredClaims: jwt.RegisteredClaims{
-					ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute*30)),
+					ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
 				},
-				Uid: claims.Uid,
+				Uid:       claims.Uid,
 				UserAgent: ctx.Request.UserAgent(),
 			}
 			//claims.ExpiresAt =  jwt.NewNumericDate(time.Now().Add(time.Minute)),
