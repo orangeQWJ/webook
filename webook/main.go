@@ -9,6 +9,7 @@ import (
 	"xws/webook/internal/repository/cache"
 	"xws/webook/internal/repository/dao"
 	"xws/webook/internal/service"
+	"xws/webook/internal/service/sms/tencent"
 	"xws/webook/internal/web"
 	"xws/webook/internal/web/middleware"
 
@@ -22,11 +23,17 @@ import (
 	"gorm.io/gorm"
 )
 
+func InitRedis() redis.Cmdable {
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: config.Config.Redis.Addr,
+	})
+	return redisClient
+}
+
 func main() {
 	db := initDB()
 	server := initWebServer()
-
-	u := initUser(db)
+	u := initUser(db, InitRedis())
 	u.RegisterRoutes(server)
 
 	server.Run(":8080")
@@ -57,14 +64,19 @@ func initDB() *gorm.DB {
 	return db
 }
 
-func initUser(db *gorm.DB) *web.UserHandler {
+func initUser(db *gorm.DB, rdb redis.Cmdable) *web.UserHandler {
 	ud := dao.NewUserDao(db)
 	ucahce := cache.NewUserCache(redis.NewClient(&redis.Options{
 		Addr: config.Config.Redis.Addr,
 	}))
 	repo := repository.NewUserRepository(ud, ucahce)
 	svc := service.NewUserService(repo)
-	u := web.NewUserHandler(svc)
+
+	codeCache := cache.NewCodeCache(rdb)
+	codeRepo := repository.NewCodeRepository(codeCache)
+	smsScv := tencent.NewService(tencent.InitTencentSmsClient(), "1400920455", "木凳也公众号")
+	codeSvc := service.NewCodeService(codeRepo, smsScv)
+	u := web.NewUserHandler(svc, codeSvc)
 	return u
 }
 

@@ -16,12 +16,13 @@ import (
 // UserHandler 我准备在它上面定义跟用户有关的路由
 type UserHandler struct {
 	svc         *service.UserService
+	codeSvc     *service.CodeService
 	emailExp    *regexp2.Regexp // 编译好的正则表达式
 	passwordExp *regexp2.Regexp
 	birthdayExp *regexp2.Regexp
 }
 
-func NewUserHandler(svc *service.UserService) *UserHandler {
+func NewUserHandler(svc *service.UserService, codeSvc *service.CodeService) *UserHandler {
 	const (
 		emailRegexPattern    = "^\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*$"
 		passwordRegexPattern = `^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,72}$`
@@ -34,6 +35,7 @@ func NewUserHandler(svc *service.UserService) *UserHandler {
 
 	return &UserHandler{
 		svc:         svc,
+		codeSvc:     codeSvc,
 		emailExp:    emailExp,
 		passwordExp: passwordExp,
 		birthdayExp: birthdayExp,
@@ -363,6 +365,27 @@ func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
 	ug.POST("/edit", u.EditJWT)
 	//ug.GET("/profile", u.Profile)
 	ug.GET("/profile", u.ProfileJWT)
+	ug.POST("/login/sms/code/send", u.SendLoginSMSCode)
+}
+
+func (u *UserHandler) SendLoginSMSCode(ctx *gin.Context) {
+	type Req struct {
+		Phone string `json:"phone"`
+	}
+	var req Req
+	const biz = "login"
+	if err := ctx.Bind(&req); err != nil {
+		// 前端的问题,前端传过来的应该是json格式
+		ctx.String(http.StatusOK, "解析错误")
+		return
+	}
+	err := u.codeSvc.Send(ctx, biz, req.Phone)
+	if err != nil {
+		ctx.String(http.StatusOK, "发送验证码:系统异常")
+		return
+	}
+	ctx.String(http.StatusOK, "发送成功")
+
 }
 
 type UserClaims struct {

@@ -3,22 +3,25 @@ package tencent
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/ecodeclub/ekit/slice"
-	sms "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sms/v20210111"
+	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
+	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile"
+	Tencent_sms "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sms/v20210111"
 )
 
 type Service struct {
 	appId    *string
 	signName *string
-	client   *sms.Client
+	client   *Tencent_sms.Client
 }
 
 func ToPtr(t string) *string {
 	return &t
 }
 
-func NewService(client *sms.Client, appId string, signName string) *Service {
+func NewService(client *Tencent_sms.Client, appId string, signName string) *Service {
 	return &Service{
 		appId:    ToPtr(appId),
 		signName: ToPtr(signName),
@@ -26,8 +29,26 @@ func NewService(client *sms.Client, appId string, signName string) *Service {
 	}
 }
 
+func InitTencentSmsClient() *Tencent_sms.Client {
+	secretId, ok := os.LookupEnv("SMS_SECRET_ID")
+	if !ok {
+		panic("设置SMS_SECRET_ID")
+	}
+	secretKey, ok := os.LookupEnv("SMS_SECRET_KEY")
+	if !ok {
+		panic("设置SMS_SECRET_KEY")
+	}
+	c, err := Tencent_sms.NewClient(common.NewCredential(secretId, secretKey),
+		"ap-beijing",
+		profile.NewClientProfile())
+	if err != nil {
+		panic("腾讯短信服务客户端启动失败")
+	}
+	return c
+}
+
 func (s *Service) Send(ctx context.Context, tplId string, args []string, numbers ...string) error {
-	req := sms.NewSendSmsRequest()
+	req := Tencent_sms.NewSendSmsRequest()
 	req.SmsSdkAppId = s.appId
 	req.SignName = s.signName
 	req.TemplateId = ToPtr(tplId)
