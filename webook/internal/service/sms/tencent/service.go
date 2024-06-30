@@ -48,6 +48,8 @@ func InitTencentSmsClient() *Tencent_sms.Client {
 }
 
 func (s *Service) Send(ctx context.Context, tplId string, args []string, numbers ...string) error {
+	// 腾讯云在向某手机号发送短信时有频率限制,在网页端可以修改限制
+	// 将某些手机号加入无限制的白名单,方便测试开发
 	req := Tencent_sms.NewSendSmsRequest()
 	req.SmsSdkAppId = s.appId
 	req.SignName = s.signName

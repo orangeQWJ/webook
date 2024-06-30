@@ -38,7 +38,7 @@ func TestSender(t *testing.T) {
 		{
 			name:   "发送验证码",
 			tplId:  "2196630",
-			params: []string{"520"},
+			params: []string{"520520"},
 			// 改成你的手机号码
 			numbers: []string{myPhoneNum},
 		},

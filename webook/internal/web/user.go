@@ -365,7 +365,8 @@ func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
 	ug.POST("/edit", u.EditJWT)
 	//ug.GET("/profile", u.Profile)
 	ug.GET("/profile", u.ProfileJWT)
-	ug.POST("/login/sms/code/send", u.SendLoginSMSCode)
+	ug.POST("/login_sms/code/send", u.SendLoginSMSCode)
+	ug.POST("/login_sms", u.LoginSMS)
 }
 
 func (u *UserHandler) SendLoginSMSCode(ctx *gin.Context) {
@@ -380,12 +381,75 @@ func (u *UserHandler) SendLoginSMSCode(ctx *gin.Context) {
 		return
 	}
 	err := u.codeSvc.Send(ctx, biz, req.Phone)
-	if err != nil {
-		ctx.String(http.StatusOK, "发送验证码:系统异常")
+	switch err {
+	case nil:
+		ctx.JSON(http.StatusOK, Result{
+			Code: 4,
+			Msg:  "验证码发送成功",
+		})
+
+	case service.ErrCodeSendTooMany:
+		ctx.JSON(http.StatusOK, Result{
+			Code: 4,
+			Msg:  "验证码请求太频繁,请稍后再试",
+		})
+	default:
+		// cache.ErrEnryWithoutExpire
+		// cache.ErrUnknowForLuaScript
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+
+	}
+}
+
+func (u *UserHandler) LoginSMS(ctx *gin.Context) {
+	type Req struct {
+		Phone string `json:"phone"`
+		Code  string `json:"code"`
+	}
+	var req Req
+	const biz = "login"
+	if err := ctx.Bind(&req); err != nil {
+		// 前端的问题,前端传过来的应该是json格式
+		ctx.String(http.StatusOK, "解析错误")
 		return
 	}
-	ctx.String(http.StatusOK, "发送成功")
+	if req.Phone == "" {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 4,
+			Msg:  "请输入正确的手机号",
+		})
+	}
+	ok, err := u.codeSvc.Verify(ctx, biz, req.Phone, req.Code)
+	if err == service.ErrCodeExpired {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 4,
+			Msg:  "验证失败",
+		})
+		return
+	}
+	if err != nil {
+		//cache.ErrUnknowForLuaScript
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+		return
+	}
+	if ok {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 4,
+			Msg:  "验证成功",
+		})
+	} else {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 4,
+			Msg:  "验证码错误",
+		})
 
+	}
 }
 
 type UserClaims struct {

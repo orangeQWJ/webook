@@ -10,9 +10,10 @@ import (
 )
 
 var (
-	ErrCodeSendTooMany        = errors.New("发送验证码太频繁")
-	ErrCodeVerifyTooManyTimes = errors.New("验证失败次数达到上限")
-	ErrUnknowForCode          = errors.New("lua 脚本出现了未知的错误")
+	ErrCodeSendTooMany    = errors.New("发送验证码太频繁")
+	ErrCodeExpired        = errors.New("验证码失效")
+	ErrUnknowForLuaScript = errors.New("lua 脚本出现了未知的错误")
+	ErrEnryWithoutExpire  = errors.New("验证码数据没有过期时间")
 )
 
 // 编译器会把lua脚本的源码放到这个变量中
@@ -46,10 +47,10 @@ func (c *CodeCache) Set(ctx context.Context, biz, phone, code string) error {
 		return ErrCodeSendTooMany
 	case -2:
 		//系统错误
-		return errors.New("系统错误")
+		return ErrEnryWithoutExpire
 	default:
-		//系统错误
-		return errors.New("系统错误")
+		//lua脚本执行出错系统错误
+		return ErrUnknowForLuaScript
 	}
 }
 
@@ -66,11 +67,11 @@ func (c *CodeCache) Verify(ctx context.Context, biz, phone, inputCode string) (b
 	case 0:
 		return true, nil
 	case -1:
-		// 如果频繁出现这个错误,就要小心有人恶意破解密码
-		return false, ErrCodeVerifyTooManyTimes
+		// 
+		return false, ErrCodeExpired
 	case -2:
 		return false, nil
 	default:
-		return false, ErrUnknowForCode
+		return false, ErrUnknowForLuaScript
 	}
 }

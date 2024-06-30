@@ -16,12 +16,13 @@ local ttl = tonumber(redis.call("ttl", key))
 if ttl == -1 then
 	-- 系统错误,有人手动设置了这个key,但是没有设置过期时间
 	return -2
-elseif ttl == -2 or ttl < 540 then
+elseif ttl == -2 or ttl < 120 then
 	-- key 不存在(有效期过了,自动清除)或者有效期剩余不足9分钟
+	-- 重新设置验证码
 	redis.call("set", key, val)
-	redis.call("expire", key, 600)
+	redis.call("expire", key, 180)
 	redis.call("set", cntkey, 3)
-	redis.call("expire", cntkey, 600)
+	redis.call("expire", cntkey, 180)
 	return 0
 else
 	-- 发送太频繁

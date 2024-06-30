@@ -10,6 +10,10 @@ import (
 
 const codeTplId = "2196630"
 
+var (
+	ErrCodeSendTooMany        = repository.ErrCodeSendTooMany
+	ErrCodeExpired = repository.ErrCodeExpired
+)
 
 type CodeService struct {
 	repo   *repository.CodeRepository
@@ -29,20 +33,13 @@ func (svc *CodeService) Send(ctx context.Context, biz string, phone string) erro
 	// $biz:code:130xxxxxx
 	// 1. 生成验证码
 	code := svc.generateCode()
-	// 2. 塞进redis
-
+	// 2. 存入redis
 	err := svc.repo.Store(ctx, biz, phone, code)
 	if err != nil {
 		return err
 	}
 	// 3. 发送验证码
 	err = svc.smsSvc.Send(ctx, codeTplId, []string{code}, phone)
-	/*
-		if err != nil {
-			//  err 有可能是发送超时/发送失败
-			// log 记录
-		}
-	*/
 	if err != nil {
 		fmt.Println(err)
 	}
