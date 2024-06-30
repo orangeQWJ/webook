@@ -137,6 +137,26 @@ func (u *UserHandler) Login(ctx *gin.Context) {
 	return
 }
 
+func (u *UserHandler) SetJWT(ctx *gin.Context, userId int64) error {
+	claims := UserClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
+		},
+		Uid:       userId,
+		UserAgent: ctx.Request.UserAgent(),
+	}
+
+	//token := jwt.New(jwt.SigningMethodHS512)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
+	tokenStr, err := token.SignedString([]byte("95osj3fUD7fo0mlYdDbncXz4VD2igvf0"))
+	if err != nil {
+		//ctx.String(http.StatusInternalServerError, "JWT系统错误")
+		return err
+	}
+	ctx.Header("x-jwt-token", tokenStr)
+	return nil
+}
+
 func (u *UserHandler) LoginJWT(ctx *gin.Context) {
 	type LoginReq struct {
 		Email    string `json:"email"`
@@ -159,26 +179,30 @@ func (u *UserHandler) LoginJWT(ctx *gin.Context) {
 	// 用户账户密码正确
 	// 在这里用JWT 设置登录态
 	// 生成一个token
-	claims := UserClaims{
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
-		},
-		Uid:       user.Id,
-		UserAgent: ctx.Request.UserAgent(),
-	}
+	/*
+		claims := UserClaims{
+			RegisteredClaims: jwt.RegisteredClaims{
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
+			},
+			Uid:       user.Id,
+			UserAgent: ctx.Request.UserAgent(),
+		}
 
-	fmt.Println(user)
-	//token := jwt.New(jwt.SigningMethodHS512)
-	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
-	tokenStr, err := token.SignedString([]byte("95osj3fUD7fo0mlYdDbncXz4VD2igvf0"))
+		//token := jwt.New(jwt.SigningMethodHS512)
+		token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
+		tokenStr, err := token.SignedString([]byte("95osj3fUD7fo0mlYdDbncXz4VD2igvf0"))
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, "JWT系统错误")
+			return
+		}
+		//fmt.Println(tokenStr)
+		ctx.Header("x-jwt-token", tokenStr)
+	*/
+	err = u.SetJWT(ctx, user.Id)
 	if err != nil {
-		fmt.Println("jwt 系统错误")
-		fmt.Println(err)
-		ctx.String(http.StatusInternalServerError, "系统错误")
+		ctx.String(http.StatusInternalServerError, "JWT系统错误")
 		return
 	}
-	//fmt.Println(tokenStr)
-	ctx.Header("x-jwt-token", tokenStr)
 	//ctx.String(http.StatusOK, "登录成功:%s", tokenStr)
 	ctx.String(http.StatusOK, "登录成功")
 	return
@@ -438,18 +462,35 @@ func (u *UserHandler) LoginSMS(ctx *gin.Context) {
 		})
 		return
 	}
-	if ok {
-		ctx.JSON(http.StatusOK, Result{
-			Code: 4,
-			Msg:  "验证成功",
-		})
-	} else {
+
+	if !ok {
 		ctx.JSON(http.StatusOK, Result{
 			Code: 4,
 			Msg:  "验证码错误",
 		})
-
 	}
+	// 验证码成功, 要完成登录逻辑
+	/*
+		ctx.JSON(http.StatusOK, Result{
+			Code: 4,
+			Msg:  "验证成功",
+		})
+	*/
+	daminU, err := u.svc.FindOrCreate(ctx, req.Phone)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+		return
+	}
+	u.SetJWT(ctx, daminU.Id)
+	ctx.JSON(http.StatusOK, Result{
+		Code: 4,
+		Msg:  "登录/注册成功",
+	})
+	return
+
 }
 
 type UserClaims struct {

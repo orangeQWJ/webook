@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"xws/webook/internal/domain"
 	"xws/webook/internal/repository/cache"
@@ -26,10 +27,14 @@ func NewUserRepository(dao *dao.UserDao, cache *cache.UserCache) *UserRepository
 }
 
 func (r *UserRepository) Create(ctx context.Context, u domain.User) error {
+	/*
 	return r.dao.Insert(ctx, dao.User{
 		Email:    u.Email,
 		Password: u.Password,
 	})
+	*/
+	return r.dao.Insert(ctx, r.domainToEntity(u))
+
 	// 在这里操作缓存
 }
 func (r *UserRepository) FindById(ctx context.Context, uId int64) (domain.User, error) {
@@ -52,7 +57,6 @@ func (r *UserRepository) FindById(ctx context.Context, uId int64) (domain.User, 
 		*/
 	}
 	// 正常缓存未命中
-	fmt.Printf("查数据库")
 	daoUser, err := r.dao.FindById(ctx, uId)
 	if err == dao.ErrUserNotFound { // 没找到数据,但是是因为缺少数据行
 		return domain.User{}, ErrUserNotFound
@@ -108,11 +112,39 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string) (domain.
 		return domain.User{}, err
 	}
 	// 根据email索引找到了数据
+	/*
 	return domain.User{
 		Id:       u.Id,
 		Email:    u.Email,
 		Password: u.Password,
 	}, nil
+	*/
+	return r.entityToDomain(u), nil
+	// 返回的错误
+	//	1. 没找到用户数据
+	//	2. 数据库未知错误
+}
+
+func (r *UserRepository) FindByPhone(ctx context.Context, email string) (domain.User, error) {
+	u, err := r.dao.FindByPhone(ctx, email)
+	// errr:
+	//	1. 没找到数据
+	//	2. 数据库系统错误
+	if err == dao.ErrUserNotFound { // 没找到数据,但是是因为缺少数据行
+		return domain.User{}, ErrUserNotFound
+	}
+	if err != nil { // 发生错误,但是不是数据缺失错误
+		return domain.User{}, err
+	}
+	// 根据email索引找到了数据
+	/*
+	return domain.User{
+		Id:       u.Id,
+		Email:    u.Email,
+		Password: u.Password,
+	}, nil
+	*/
+	return  r.entityToDomain(u) , nil
 	// 返回的错误
 	//	1. 没找到用户数据
 	//	2. 数据库未知错误
@@ -125,4 +157,34 @@ func (r *UserRepository) UpdateProfile(ctx context.Context, u domain.User) error
 		Birthday: u.Birthday,
 		AboutMe:  u.AboutMe,
 	})
+}
+
+func (r *UserRepository) entityToDomain(u dao.User) domain.User {
+	return domain.User{
+		Id:       u.Id,
+		Email:    u.Email.String,
+		Password: u.Password,
+		Nickname: u.Nickname,
+		Birthday: u.Birthday,
+		AboutMe:  u.AboutMe,
+		Phone:    u.Phone.String,
+	}
+}
+
+func (r *UserRepository) domainToEntity(u domain.User) dao.User {
+	return dao.User{
+		Id: u.Id,
+		Email: sql.NullString{
+			String: u.Email,
+			Valid:  u.Email != "",
+		},
+		Password: u.Password,
+		Nickname: u.Nickname,
+		Birthday: u.Birthday,
+		AboutMe:  u.AboutMe,
+		Phone: sql.NullString{
+			String: u.Phone,
+			Valid:  u.Phone != "",
+		},
+	}
 }
