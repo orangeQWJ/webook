@@ -12,7 +12,7 @@ import (
 
 var (
 	ErrUserDuplicate = errors.New("唯一约束字段冲突")
-	ErrUserNotFound       = gorm.ErrRecordNotFound
+	ErrUserNotFound  = gorm.ErrRecordNotFound
 )
 
 type UserDao struct {
@@ -75,15 +75,15 @@ func (dao *UserDao) UpdateProfile(ctx context.Context, u User) error {
 // User 直接对应数据库表结构
 // 有些人叫做 entity / model / po (persistent object)
 type User struct {
-	Id       int64  `gorm:"primaryKey, autoIncrement"`
+	Id       int64          `gorm:"primaryKey, autoIncrement"`
 	Email    sql.NullString `gorm:"unique"`
 	Password string
 	Nickname string
 	Birthday string
 	AboutMe  string
 	Phone    sql.NullString `gorm:"unique"` //唯一索引允许有多个空时,这样设置
-	Ctime    int64 // 创建时间
-	Utime    int64 // 更新时间
+	Ctime    int64          // 创建时间
+	Utime    int64          // 更新时间
 	//Phone    string `gorm:"unique"` // 空字符串相互冲突
 
 }

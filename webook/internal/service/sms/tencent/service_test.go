@@ -26,7 +26,7 @@ func TestSender(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s := NewService(c, "1400920455", "木凳也公众号")
+	s := NewService(c)
 
 	testCases := []struct {
 		name    string

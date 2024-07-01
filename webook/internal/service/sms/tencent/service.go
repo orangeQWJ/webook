@@ -21,6 +21,7 @@ func ToPtr(t string) *string {
 	return &t
 }
 
+/*
 func NewService(client *Tencent_sms.Client, appId string, signName string) *Service {
 	return &Service{
 		appId:    ToPtr(appId),
@@ -28,7 +29,15 @@ func NewService(client *Tencent_sms.Client, appId string, signName string) *Serv
 		client:   client,
 	}
 }
+*/
 
+func NewService(client *Tencent_sms.Client) *Service {
+	return &Service{
+		appId:    ToPtr("1400920455"),
+		signName: ToPtr("木凳也公众号"),
+		client:   client,
+	}
+}
 func InitTencentSmsClient() *Tencent_sms.Client {
 	secretId, ok := os.LookupEnv("SMS_SECRET_ID")
 	if !ok {

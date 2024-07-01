@@ -9,7 +9,7 @@ import (
 	"xws/webook/internal/repository/dao"
 )
 
-var ErrUserDuplicateEmail = dao.ErrUserDuplicateEmail
+var ErrUserDuplicate = dao.ErrUserDuplicate
 var ErrUserNotFound = dao.ErrUserNotFound
 
 //var ErrUserDuplicateEmailV1 = fmt.Errorf("%w 邮箱冲突", dao.ErrUserDuplicateEmail)
@@ -28,10 +28,10 @@ func NewUserRepository(dao *dao.UserDao, cache *cache.UserCache) *UserRepository
 
 func (r *UserRepository) Create(ctx context.Context, u domain.User) error {
 	/*
-	return r.dao.Insert(ctx, dao.User{
-		Email:    u.Email,
-		Password: u.Password,
-	})
+		return r.dao.Insert(ctx, dao.User{
+			Email:    u.Email,
+			Password: u.Password,
+		})
 	*/
 	return r.dao.Insert(ctx, r.domainToEntity(u))
 
@@ -113,11 +113,11 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string) (domain.
 	}
 	// 根据email索引找到了数据
 	/*
-	return domain.User{
-		Id:       u.Id,
-		Email:    u.Email,
-		Password: u.Password,
-	}, nil
+		return domain.User{
+			Id:       u.Id,
+			Email:    u.Email,
+			Password: u.Password,
+		}, nil
 	*/
 	return r.entityToDomain(u), nil
 	// 返回的错误
@@ -138,13 +138,13 @@ func (r *UserRepository) FindByPhone(ctx context.Context, email string) (domain.
 	}
 	// 根据email索引找到了数据
 	/*
-	return domain.User{
-		Id:       u.Id,
-		Email:    u.Email,
-		Password: u.Password,
-	}, nil
+		return domain.User{
+			Id:       u.Id,
+			Email:    u.Email,
+			Password: u.Password,
+		}, nil
 	*/
-	return  r.entityToDomain(u) , nil
+	return r.entityToDomain(u), nil
 	// 返回的错误
 	//	1. 没找到用户数据
 	//	2. 数据库未知错误

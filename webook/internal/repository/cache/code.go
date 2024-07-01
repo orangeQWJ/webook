@@ -67,7 +67,7 @@ func (c *CodeCache) Verify(ctx context.Context, biz, phone, inputCode string) (b
 	case 0:
 		return true, nil
 	case -1:
-		// 
+		//
 		return false, ErrCodeExpired
 	case -2:
 		return false, nil

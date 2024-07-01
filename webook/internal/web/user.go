@@ -13,6 +13,13 @@ import (
 	jwt "github.com/golang-jwt/jwt/v5"
 )
 
+// 如果 UserHandler 是一个实现了 Handler 接口的结构体，使用 _
+// 可以确保编译器在编译时检查 UserHandler 是否真的实现了 Handler
+// 接口。如果没有实现，会在编译时产生错误。
+// var _ handler = &UserHandler{}
+// 更优雅👇🏻
+var _ handler = (*UserHandler)(nil)
+
 // UserHandler 我准备在它上面定义跟用户有关的路由
 type UserHandler struct {
 	svc         *service.UserService
@@ -91,7 +98,7 @@ func (u *UserHandler) SignUp(ctx *gin.Context) {
 		Email:    req.Email,
 		Password: req.Password,
 	})
-	if err == service.ErrUserDuplicateEmail {
+	if err == service.ErrUserDuplicate {
 		ctx.String(http.StatusOK, "邮箱冲突")
 		return
 	}
