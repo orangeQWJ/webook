@@ -14,19 +14,32 @@ var ErrUserNotFound = dao.ErrUserNotFound
 
 //var ErrUserDuplicateEmailV1 = fmt.Errorf("%w 邮箱冲突", dao.ErrUserDuplicateEmail)
 
-type UserRepository struct {
-	dao   *dao.UserDao
-	cache *cache.UserCache
+var _ UserRepository = &CacheDaoUserRepository{}
+
+type UserRepository interface {
+	Create(ctx context.Context, u domain.User) error
+	FindById(ctx context.Context, uId int64) (domain.User, error)
+	FindByIdWithoutCache(ctx context.Context, uId int64) (domain.User, error)
+	FindByEmail(ctx context.Context, email string) (domain.User, error)
+	FindByPhone(ctx context.Context, email string) (domain.User, error)
+	UpdateProfile(ctx context.Context, u domain.User) error
+	entityToDomain(u dao.User) domain.User
+	domainToEntity(u domain.User) dao.User
 }
 
-func NewUserRepository(dao *dao.UserDao, cache *cache.UserCache) *UserRepository {
-	return &UserRepository{
+type CacheDaoUserRepository struct {
+	dao   dao.UserDao
+	cache cache.UserCache
+}
+
+func NewUserRepository(dao dao.UserDao, cache cache.UserCache) UserRepository {
+	return &CacheDaoUserRepository{
 		dao:   dao,
 		cache: cache,
 	}
 }
 
-func (r *UserRepository) Create(ctx context.Context, u domain.User) error {
+func (r *CacheDaoUserRepository) Create(ctx context.Context, u domain.User) error {
 	/*
 		return r.dao.Insert(ctx, dao.User{
 			Email:    u.Email,
@@ -37,7 +50,7 @@ func (r *UserRepository) Create(ctx context.Context, u domain.User) error {
 
 	// 在这里操作缓存
 }
-func (r *UserRepository) FindById(ctx context.Context, uId int64) (domain.User, error) {
+func (r *CacheDaoUserRepository) FindById(ctx context.Context, uId int64) (domain.User, error) {
 	domainUser, err := r.cache.Get(ctx, uId)
 	// 缓存中有数据 err == nil
 	// 缓存中无数据 err == cache.ErrKeyNotExist
@@ -78,7 +91,7 @@ func (r *UserRepository) FindById(ctx context.Context, uId int64) (domain.User, 
 	return domainUser, nil
 }
 
-func (r *UserRepository) FindByIdWithoutCache(ctx context.Context, uId int64) (domain.User, error) {
+func (r *CacheDaoUserRepository) FindByIdWithoutCache(ctx context.Context, uId int64) (domain.User, error) {
 	fmt.Printf("查数据库")
 	daoUser, err := r.dao.FindById(ctx, uId)
 	if err == dao.ErrUserNotFound { // 没找到数据,但是是因为缺少数据行
@@ -100,7 +113,7 @@ func (r *UserRepository) FindByIdWithoutCache(ctx context.Context, uId int64) (d
 	}
 	return domainUser, nil
 }
-func (r *UserRepository) FindByEmail(ctx context.Context, email string) (domain.User, error) {
+func (r *CacheDaoUserRepository) FindByEmail(ctx context.Context, email string) (domain.User, error) {
 	u, err := r.dao.FindByEmail(ctx, email)
 	// errr:
 	//	1. 没找到数据
@@ -125,7 +138,7 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string) (domain.
 	//	2. 数据库未知错误
 }
 
-func (r *UserRepository) FindByPhone(ctx context.Context, email string) (domain.User, error) {
+func (r *CacheDaoUserRepository) FindByPhone(ctx context.Context, email string) (domain.User, error) {
 	u, err := r.dao.FindByPhone(ctx, email)
 	// errr:
 	//	1. 没找到数据
@@ -150,7 +163,7 @@ func (r *UserRepository) FindByPhone(ctx context.Context, email string) (domain.
 	//	2. 数据库未知错误
 }
 
-func (r *UserRepository) UpdateProfile(ctx context.Context, u domain.User) error {
+func (r *CacheDaoUserRepository) UpdateProfile(ctx context.Context, u domain.User) error {
 	return r.dao.UpdateProfile(ctx, dao.User{
 		Id:       u.Id,
 		Nickname: u.Nickname,
@@ -159,7 +172,7 @@ func (r *UserRepository) UpdateProfile(ctx context.Context, u domain.User) error
 	})
 }
 
-func (r *UserRepository) entityToDomain(u dao.User) domain.User {
+func (r *CacheDaoUserRepository) entityToDomain(u dao.User) domain.User {
 	return domain.User{
 		Id:       u.Id,
 		Email:    u.Email.String,
@@ -171,7 +184,7 @@ func (r *UserRepository) entityToDomain(u dao.User) domain.User {
 	}
 }
 
-func (r *UserRepository) domainToEntity(u domain.User) dao.User {
+func (r *CacheDaoUserRepository) domainToEntity(u domain.User) dao.User {
 	return dao.User{
 		Id: u.Id,
 		Email: sql.NullString{
