@@ -181,7 +181,6 @@ func TestUserHandler_Signup(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			server := gin.Default()
-
 			h := NewUserHandler(tc.mock(ctrl), nil)
 			h.RegisterRoutes(server)
 
@@ -193,8 +192,8 @@ func TestUserHandler_Signup(t *testing.T) {
 			// 准备响应
 			resp := httptest.NewRecorder()
 
-			t.Log(req)
-			t.Log(resp)
+			//t.Log(req)
+			//t.Log(resp)
 			// 这就是HTTP请求 进去GIN框架的入口
 			// 当你这样调用的时候,GIN就会处理这个请求
 			// 响应写回resp里
@@ -226,6 +225,8 @@ func TestMock(t *testing.T) {
 	defer ctrl.Finish()
 	usersvc := svcmocks.NewMockUserService(ctrl)
 	usersvc.EXPECT().SignUp(gomock.Any(), gomock.Any()).Return(errors.New("mock error"))
+	// 可以用参数对输入做一些简单的检查
+	// 返回值是确定的
 	//usersvc.EXPECT().SignUp(gomock.Any(), gomock.Any()).Times(2).Return(errors.New("mock error"))
 
 	err := usersvc.SignUp(context.Background(), domain.User{
