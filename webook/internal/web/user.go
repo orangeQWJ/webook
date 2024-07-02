@@ -384,7 +384,8 @@ func (u *UserHandler) ProfileJWT(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "mysql/redis错误")
 		return
 	}
-	ctx.String(http.StatusOK, "%s", userInfo)
+	ctx.String(http.StatusOK, "昵称:%s\n生日:%s\n简介:%s\n", userInfo.Nickname, userInfo.Birthday, userInfo.AboutMe)
+	fmt.Println(userInfo)
 	return
 }
 

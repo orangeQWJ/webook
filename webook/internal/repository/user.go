@@ -70,6 +70,7 @@ func (r *CacheDaoUserRepository) FindById(ctx context.Context, uId int64) (domai
 		*/
 	}
 	// 正常缓存未命中
+	//fmt.Println("profile 缓存未命中,查询数据库")
 	daoUser, err := r.dao.FindById(ctx, uId)
 	if err == dao.ErrUserNotFound { // 没找到数据,但是是因为缺少数据行
 		return domain.User{}, ErrUserNotFound
@@ -78,12 +79,15 @@ func (r *CacheDaoUserRepository) FindById(ctx context.Context, uId int64) (domai
 		return domain.User{}, err
 	}
 	// 根据email索引找到了数据
-	domainUser = domain.User{
-		Id:       daoUser.Id,
-		Nickname: daoUser.Nickname,
-		Birthday: daoUser.Birthday,
-		AboutMe:  daoUser.AboutMe,
-	}
+	domainUser = r.entityToDomain(daoUser)
+	/*
+		domainUser = domain.User{
+			Id:       daoUser.Id,
+			Nickname: daoUser.Nickname,
+			Birthday: daoUser.Birthday,
+			AboutMe:  daoUser.AboutMe,
+		}
+	*/
 	err = r.cache.Set(ctx, domainUser)
 	if err != nil {
 		// 打日志 做监控
@@ -101,12 +105,15 @@ func (r *CacheDaoUserRepository) FindByIdWithoutCache(ctx context.Context, uId i
 		return domain.User{}, err
 	}
 	// 根据email索引找到了数据
-	domainUser := domain.User{
-		Id:       daoUser.Id,
-		Nickname: daoUser.Nickname,
-		Birthday: daoUser.Birthday,
-		AboutMe:  daoUser.AboutMe,
-	}
+	domainUser := r.entityToDomain(daoUser)
+	/*
+		domainUser := domain.User{
+			Id:       daoUser.Id,
+			Nickname: daoUser.Nickname,
+			Birthday: daoUser.Birthday,
+			AboutMe:  daoUser.AboutMe,
+		}
+	*/
 	err = r.cache.Set(ctx, domainUser)
 	if err != nil {
 		// 打日志 做监控
@@ -164,12 +171,22 @@ func (r *CacheDaoUserRepository) FindByPhone(ctx context.Context, email string) 
 }
 
 func (r *CacheDaoUserRepository) UpdateProfile(ctx context.Context, u domain.User) error {
-	return r.dao.UpdateProfile(ctx, dao.User{
-		Id:       u.Id,
-		Nickname: u.Nickname,
-		Birthday: u.Birthday,
-		AboutMe:  u.AboutMe,
-	})
+	// 更新cache
+	err := r.cache.Set(ctx, u)
+	if err != nil {
+		// 打日志 做监控
+	}
+	daoUser := r.domainToEntity(u)
+
+	return r.dao.UpdateProfile(ctx, daoUser)
+	/*
+		return r.dao.UpdateProfile(ctx, dao.User{
+			Id:       u.Id,
+			Nickname: u.Nickname,
+			Birthday: u.Birthday,
+			AboutMe:  u.AboutMe,
+		})
+	*/
 }
 
 func (r *CacheDaoUserRepository) entityToDomain(u dao.User) domain.User {
