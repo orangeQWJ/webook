@@ -61,7 +61,7 @@ func (u *UserHandler) SignUp(ctx *gin.Context) {
 	// 解析错了，就会直接写回一个 400 的错误
 	if err := ctx.Bind(&req); err != nil {
 		// 前端的问题,前端传过来的应该是json格式
-		ctx.String(http.StatusOK, "解析错误")
+		//ctx.String(http.StatusOK, "解析错误")
 		return
 	}
 
