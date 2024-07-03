@@ -23,8 +23,8 @@ type UserRepository interface {
 	FindByEmail(ctx context.Context, email string) (domain.User, error)
 	FindByPhone(ctx context.Context, email string) (domain.User, error)
 	UpdateProfile(ctx context.Context, u domain.User) error
-	entityToDomain(u dao.User) domain.User
-	domainToEntity(u domain.User) dao.User
+	EntityToDomain(u dao.User) domain.User
+	DomainToEntity(u domain.User) dao.User
 }
 
 type CacheDaoUserRepository struct {
@@ -46,7 +46,7 @@ func (r *CacheDaoUserRepository) Create(ctx context.Context, u domain.User) erro
 			Password: u.Password,
 		})
 	*/
-	return r.dao.Insert(ctx, r.domainToEntity(u))
+	return r.dao.Insert(ctx, r.DomainToEntity(u))
 
 	// 在这里操作缓存
 }
@@ -79,7 +79,7 @@ func (r *CacheDaoUserRepository) FindById(ctx context.Context, uId int64) (domai
 		return domain.User{}, err
 	}
 	// 根据email索引找到了数据
-	domainUser = r.entityToDomain(daoUser)
+	domainUser = r.EntityToDomain(daoUser)
 	/*
 		domainUser = domain.User{
 			Id:       daoUser.Id,
@@ -105,7 +105,7 @@ func (r *CacheDaoUserRepository) FindByIdWithoutCache(ctx context.Context, uId i
 		return domain.User{}, err
 	}
 	// 根据email索引找到了数据
-	domainUser := r.entityToDomain(daoUser)
+	domainUser := r.EntityToDomain(daoUser)
 	/*
 		domainUser := domain.User{
 			Id:       daoUser.Id,
@@ -139,7 +139,7 @@ func (r *CacheDaoUserRepository) FindByEmail(ctx context.Context, email string) 
 			Password: u.Password,
 		}, nil
 	*/
-	return r.entityToDomain(u), nil
+	return r.EntityToDomain(u), nil
 	// 返回的错误
 	//	1. 没找到用户数据
 	//	2. 数据库未知错误
@@ -164,7 +164,7 @@ func (r *CacheDaoUserRepository) FindByPhone(ctx context.Context, email string) 
 			Password: u.Password,
 		}, nil
 	*/
-	return r.entityToDomain(u), nil
+	return r.EntityToDomain(u), nil
 	// 返回的错误
 	//	1. 没找到用户数据
 	//	2. 数据库未知错误
@@ -176,7 +176,7 @@ func (r *CacheDaoUserRepository) UpdateProfile(ctx context.Context, u domain.Use
 	if err != nil {
 		// 打日志 做监控
 	}
-	daoUser := r.domainToEntity(u)
+	daoUser := r.DomainToEntity(u)
 
 	return r.dao.UpdateProfile(ctx, daoUser)
 	/*
@@ -189,7 +189,7 @@ func (r *CacheDaoUserRepository) UpdateProfile(ctx context.Context, u domain.Use
 	*/
 }
 
-func (r *CacheDaoUserRepository) entityToDomain(u dao.User) domain.User {
+func (r *CacheDaoUserRepository) EntityToDomain(u dao.User) domain.User {
 	return domain.User{
 		Id:       u.Id,
 		Email:    u.Email.String,
@@ -201,7 +201,7 @@ func (r *CacheDaoUserRepository) entityToDomain(u dao.User) domain.User {
 	}
 }
 
-func (r *CacheDaoUserRepository) domainToEntity(u domain.User) dao.User {
+func (r *CacheDaoUserRepository) DomainToEntity(u domain.User) dao.User {
 	return dao.User{
 		Id: u.Id,
 		Email: sql.NullString{
