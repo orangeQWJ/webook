@@ -18,4 +18,5 @@ mock:
 	@mockgen -source=/Users/orange/code/go/src/webook/webook/internal/repository/code.go -package=repomocks -destination=/Users/orange/code/go/src/webook/webook/internal/repository/mocks/code.mock.go
 	@mockgen -source=/Users/orange/code/go/src/webook/webook/internal/repository/cache/user.go -package=cachemocks -destination=/Users/orange/code/go/src/webook/webook/internal/repository/cache/mocks/user.mock.go
 	@mockgen -source=/Users/orange/code/go/src/webook/webook/internal/repository/dao/user.go -package=daomocks -destination=/Users/orange/code/go/src/webook/webook/internal/repository/dao/mocks/user.mock.go
+	@mockgen -package=redismocks -destination=/Users/orange/code/go/src/webook/webook/internal/repository/cache/redismocks/cma.mock.go  github.com/redis/go-redis/v9 Cmdable
 	@go mod tidy
