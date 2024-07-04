@@ -47,10 +47,15 @@ func (svc *codeService) Send(ctx context.Context, biz string, phone string) erro
 		return err
 	}
 	// 3. 发送验证码
+	fmt.Println("///////////////////")
+	fmt.Println(code)
+	fmt.Println("///////////////////")
+	/*
 	err = svc.smsSvc.Send(ctx, codeTplId, []string{code}, phone)
 	if err != nil {
 		fmt.Println(err)
 	}
+	*/
 	return err
 }
 

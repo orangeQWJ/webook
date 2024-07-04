@@ -409,7 +409,7 @@ func (u *UserHandler) SendLoginSMSCode(ctx *gin.Context) {
 	const biz = "login"
 	if err := ctx.Bind(&req); err != nil {
 		// 前端的问题,前端传过来的应该是json格式
-		ctx.String(http.StatusOK, "解析错误")
+		//ctx.String(http.StatusOK, "解析错误")
 		return
 	}
 	err := u.codeSvc.Send(ctx, biz, req.Phone)
