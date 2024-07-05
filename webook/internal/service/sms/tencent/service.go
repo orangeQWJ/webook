@@ -15,6 +15,7 @@ type Service struct {
 	appId    *string
 	signName *string
 	client   *Tencent_sms.Client
+	//limiter  ratelimit.Limiter
 }
 
 func ToPtr(t string) *string {
@@ -31,11 +32,13 @@ func NewService(client *Tencent_sms.Client, appId string, signName string) *Serv
 }
 */
 
+//func NewService(client *Tencent_sms.Client, limiter ratelimit.Limiter) *Service {
 func NewService(client *Tencent_sms.Client) *Service {
 	return &Service{
 		appId:    ToPtr("1400920455"),
 		signName: ToPtr("木凳也公众号"),
 		client:   client,
+		//limiter:  limiter,
 	}
 }
 func InitTencentSmsClient() *Tencent_sms.Client {
