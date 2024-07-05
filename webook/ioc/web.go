@@ -6,6 +6,7 @@ import (
 	"xws/webook/internal/web"
 	"xws/webook/internal/web/middleware"
 	"xws/webook/pkg/ginx/middlewares/ratelimit"
+	limit "xws/webook/pkg/ratelimit"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -28,7 +29,8 @@ func InitMiddlewares(redisClient redis.Cmdable) []gin.HandlerFunc {
 }
 
 func ratelimitHdl(redisClient redis.Cmdable) gin.HandlerFunc {
-	return ratelimit.NewBuilder(redisClient, time.Minute, 100).Build()
+	//return ratelimit.NewBuilder(redisClient, time.Minute, 100).Build()
+	return ratelimit.NewBuilder(limit.NewRedisSlidingWindowLimiter(redisClient, time.Minute, 100)).Build()
 }
 
 func jwtHdl() gin.HandlerFunc {
