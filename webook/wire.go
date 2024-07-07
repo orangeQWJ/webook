@@ -31,6 +31,8 @@ func InitWebServer() *gin.Engine {
 		//tencent.NewService,
 		tencent.InitTencentSmsClient,
 		web.NewUserHandler,
+		ioc.InitOAuth2WechatService,
+		web.NewOAuth2WechatHandler,
 		// 中间件
 		// 路由注册
 		//gin.Default,

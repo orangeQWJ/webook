@@ -14,6 +14,8 @@ type RateLimitdSmsService struct {
 
 var errLimited = fmt.Errorf("短信触发限流")
 
+var _ sms.Service = &RateLimitdSmsService{}
+
 func NewRateLimitdSmsService(svc sms.Service, limiter ratelimit.Limiter) sms.Service {
 	return &RateLimitdSmsService{
 		svc:     svc,

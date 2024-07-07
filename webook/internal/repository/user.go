@@ -22,6 +22,7 @@ type UserRepository interface {
 	FindByIdWithoutCache(ctx context.Context, uId int64) (domain.User, error)
 	FindByEmail(ctx context.Context, email string) (domain.User, error)
 	FindByPhone(ctx context.Context, email string) (domain.User, error)
+	FindByWechat(ctx context.Context, openid string) (domain.User, error)
 	UpdateProfile(ctx context.Context, u domain.User) error
 	EntityToDomain(u dao.User) domain.User
 	DomainToEntity(u domain.User) dao.User
@@ -145,6 +146,31 @@ func (r *CacheDaoUserRepository) FindByEmail(ctx context.Context, email string) 
 	//	2. 数据库未知错误
 }
 
+func (r *CacheDaoUserRepository) FindByWechat(ctx context.Context, openid string) (domain.User, error) {
+	u, err := r.dao.FindByWechat(ctx, openid)
+	// errr:
+	//	1. 没找到数据
+	//	2. 数据库系统错误
+	if err == dao.ErrUserNotFound { // 没找到数据,但是是因为缺少数据行
+		return domain.User{}, ErrUserNotFound
+	}
+	if err != nil { // 发生错误,但是不是数据缺失错误
+		return domain.User{}, err
+	}
+	// 根据email索引找到了数据
+	/*
+		return domain.User{
+			Id:       u.Id,
+			Email:    u.Email,
+			Password: u.Password,
+		}, nil
+	*/
+	return r.EntityToDomain(u), nil
+	// 返回的错误
+	//	1. 没找到用户数据
+	//	2. 数据库未知错误
+}
+
 func (r *CacheDaoUserRepository) FindByPhone(ctx context.Context, email string) (domain.User, error) {
 	u, err := r.dao.FindByPhone(ctx, email)
 	// errr:
@@ -198,6 +224,10 @@ func (r *CacheDaoUserRepository) EntityToDomain(u dao.User) domain.User {
 		Birthday: u.Birthday,
 		AboutMe:  u.AboutMe,
 		Phone:    u.Phone.String,
+		WechatInfo: domain.WechatInfo{
+			OpenId:  u.WechatOpenID.String,
+			UnionId: u.WechatUnionID.String,
+		},
 	}
 }
 
@@ -215,6 +245,14 @@ func (r *CacheDaoUserRepository) DomainToEntity(u domain.User) dao.User {
 		Phone: sql.NullString{
 			String: u.Phone,
 			Valid:  u.Phone != "",
+		},
+		WechatOpenID: sql.NullString{
+			String: u.WechatInfo.OpenId,
+			Valid:  u.WechatInfo.OpenId != "",
+		},
+		WechatUnionID: sql.NullString{
+			String: u.WechatInfo.UnionId,
+			Valid:  u.WechatInfo.UnionId != "",
 		},
 	}
 }
