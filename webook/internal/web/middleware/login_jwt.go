@@ -2,8 +2,6 @@ package middleware
 
 import (
 	"net/http"
-	"strings"
-	"time"
 	"xws/webook/internal/web"
 
 	"github.com/gin-gonic/gin"
@@ -13,10 +11,13 @@ import (
 // JWT 登录校验
 type LoginJwtMiddlewareBuilder struct {
 	paths []string
+	web.JwtHandler
 }
 
 func NewLoginJwtMiddlewareBuilder() *LoginJwtMiddlewareBuilder {
-	return &LoginJwtMiddlewareBuilder{}
+	return &LoginJwtMiddlewareBuilder{
+		JwtHandler: *web.NewJwtHandler(),
+	}
 
 }
 
@@ -31,65 +32,33 @@ func (l *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 				return
 			}
 		}
-		tokenHeader := ctx.GetHeader("Authorization")
-		if tokenHeader == "" {
-			ctx.AbortWithStatus(http.StatusUnauthorized)
-			return
-		}
-		segs := strings.Split(tokenHeader, " ")
-		if len(segs) != 2 {
-			ctx.AbortWithStatus(http.StatusUnauthorized)
-			return
-		}
-		tokenStr := segs[1]
-		claims := &web.UserClaims{}
-		token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {
-			return []byte("95osj3fUD7fo0mlYdDbncXz4VD2igvf0"), nil
+		tokenStr := web.ExtractToken(ctx)
+		claims := web.UserClaims{}
+		token, err := jwt.ParseWithClaims(tokenStr, &claims, func(t *jwt.Token) (interface{}, error) {
+			return l.AtKey, nil
 		})
-		if err != nil {
-			ctx.AbortWithStatus(http.StatusUnauthorized)
-			return
-		}
 
-		/*
-			if claims.ExpiresAt.Time.Before(time.Now()) {
-				// 过期了
-				ctx.AbortWithStatus(http.StatusUnauthorized)
-				return
-			}
-			//token.Valid 这里已经能反映出是否过期了
-		*/
+		if err != nil || !token.Valid {
 
-		if token == nil || !token.Valid || claims.Uid == 0 {
 			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
 		if claims.UserAgent != ctx.Request.UserAgent() {
 			// 严重安全隐患,需要监控
+			// todo 日志监控
 			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
-		now := time.Now()
 		// 每十分钟刷新一次
-		if claims.ExpiresAt.Sub(now) < time.Minute*20 {
-			newClaims := web.UserClaims{
-				RegisteredClaims: jwt.RegisteredClaims{
-					ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
-				},
-				Uid:       claims.Uid,
-				UserAgent: ctx.Request.UserAgent(),
+		// 在引入长短token后就不需要定期刷新了
+		// 短token由专门的接口刷新
+		/*
+			if claims.ExpiresAt.Sub(time.now()) < time.Minute*20 {
+				l.SetJWT(ctx, claims.Uid)
 			}
-			newToken := jwt.NewWithClaims(jwt.SigningMethodHS512, newClaims)
-			newTokenStr, newErr := newToken.SignedString([]byte("95osj3fUD7fo0mlYdDbncXz4VD2igvf0"))
-			if newErr != nil {
-				// 日志记录
-			}
-			ctx.Header("x-jwt-token", newTokenStr)
-
-		}
-		ctx.Set("claims", claims)
-
+		*/
+		ctx.Set("claims", &claims)
 	}
 }

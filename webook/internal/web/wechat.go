@@ -11,7 +11,7 @@ import (
 type OAuth2WechatHandler struct {
 	svc     wechat.Service
 	userSvc service.UserService
-	jwtHandler
+	JwtHandler
 }
 
 func NewOAuth2WechatHandler(svc wechat.Service, userSvc service.UserService) *OAuth2WechatHandler {
@@ -68,6 +68,11 @@ func (h *OAuth2WechatHandler) Callback(ctx *gin.Context) {
 			Code: 5,
 			Msg:  "系统错误",
 		})
+		return
+	}
+	err = h.SetRefreshToken(ctx, u.Id)
+	if err != nil {
+		ctx.String(http.StatusInternalServerError, "JWT系统错误")
 		return
 	}
 	ctx.JSON(http.StatusOK, Result{

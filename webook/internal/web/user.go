@@ -9,6 +9,7 @@ import (
 	"github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	jwt "github.com/golang-jwt/jwt/v5"
 )
 
 // 如果 UserHandler 是一个实现了 Handler 接口的结构体，使用 _
@@ -25,7 +26,7 @@ type UserHandler struct {
 	emailExp    *regexp2.Regexp // 编译好的正则表达式
 	passwordExp *regexp2.Regexp
 	birthdayExp *regexp2.Regexp
-	jwtHandler
+	JwtHandler
 }
 
 func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserHandler {
@@ -45,6 +46,7 @@ func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserH
 		emailExp:    emailExp,
 		passwordExp: passwordExp,
 		birthdayExp: birthdayExp,
+		JwtHandler: *NewJwtHandler(),
 	}
 }
 
@@ -143,7 +145,6 @@ func (u *UserHandler) Login(ctx *gin.Context) {
 	return
 }
 
-
 func (u *UserHandler) LoginJWT(ctx *gin.Context) {
 	type LoginReq struct {
 		Email    string `json:"email"`
@@ -163,29 +164,13 @@ func (u *UserHandler) LoginJWT(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "系统错误")
 		return
 	}
-	// 用户账户密码正确
-	// 在这里用JWT 设置登录态
-	// 生成一个token
-	/*
-		claims := UserClaims{
-			RegisteredClaims: jwt.RegisteredClaims{
-				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
-			},
-			Uid:       user.Id,
-			UserAgent: ctx.Request.UserAgent(),
-		}
-
-		//token := jwt.New(jwt.SigningMethodHS512)
-		token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
-		tokenStr, err := token.SignedString([]byte("95osj3fUD7fo0mlYdDbncXz4VD2igvf0"))
-		if err != nil {
-			ctx.String(http.StatusInternalServerError, "JWT系统错误")
-			return
-		}
-		//fmt.Println(tokenStr)
-		ctx.Header("x-jwt-token", tokenStr)
-	*/
 	err = u.SetJWT(ctx, user.Id)
+	if err != nil {
+		ctx.String(http.StatusInternalServerError, "JWT系统错误")
+		return
+	}
+
+	err = u.SetRefreshToken(ctx, user.Id)
 	if err != nil {
 		ctx.String(http.StatusInternalServerError, "JWT系统错误")
 		return
@@ -193,6 +178,35 @@ func (u *UserHandler) LoginJWT(ctx *gin.Context) {
 	//ctx.String(http.StatusOK, "登录成功:%s", tokenStr)
 	ctx.String(http.StatusOK, "登录成功")
 	return
+}
+
+func (u *UserHandler) RefreshToken(ctx *gin.Context) {
+	// 只有这个接口拿出来的才是 refresh_token, 其他地方都是 access_token
+	// 前端塞的
+	refreshToken := ExtractToken(ctx)
+	var reFreshClaims RefreshClaims
+	token, err := jwt.ParseWithClaims(refreshToken, &reFreshClaims, func(t *jwt.Token) (interface{}, error) {
+		return u.RtKey, nil
+	})
+
+	if err != nil || !token.Valid {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	// 搞个新的 access_token
+	err = u.SetJWT(ctx, reFreshClaims.Uid)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, Result{
+			Msg:  "系统错误",
+			Code: 5,
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, Result{
+		Msg:  "access_token 刷新成功",
+		Code: 4,
+	})
 }
 
 func (u *UserHandler) Logout(ctx *gin.Context) {
@@ -350,13 +364,13 @@ func (u *UserHandler) ProfileJWT(ctx *gin.Context) {
 	c, exists := ctx.Get("claims")
 	if !exists {
 		//	预期之外,添加监控
-		ctx.String(http.StatusOK, "%s", "系统错误")
+		ctx.String(http.StatusOK, "%s", "系统错误, claims 字段不存在")
 		return
 	}
 	claims, ok := c.(*UserClaims)
 	if !ok {
 		//	预期之外,添加监控
-		ctx.String(http.StatusOK, "%s", "系统错误")
+		ctx.String(http.StatusOK, "%s", "系统错误, claims 里面不是UserClims")
 		return
 	}
 	userInfo, err := u.svc.ShowProfile(ctx, claims.Uid)
@@ -379,6 +393,7 @@ func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
 	ug.GET("/profile", u.ProfileJWT)
 	ug.POST("/login_sms/code/send", u.SendLoginSMSCode)
 	ug.POST("/login_sms", u.LoginSMS)
+	ug.POST("/refresh_token", u.RefreshToken)
 }
 
 func (u *UserHandler) SendLoginSMSCode(ctx *gin.Context) {
@@ -464,7 +479,7 @@ func (u *UserHandler) LoginSMS(ctx *gin.Context) {
 			Msg:  "验证成功",
 		})
 	*/
-	daminU, err := u.svc.FindOrCreate(ctx, req.Phone)
+	domainU, err := u.svc.FindOrCreate(ctx, req.Phone)
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{
 			Code: 5,
@@ -472,11 +487,16 @@ func (u *UserHandler) LoginSMS(ctx *gin.Context) {
 		})
 		return
 	}
-	u.SetJWT(ctx, daminU.Id)
+	u.SetJWT(ctx, domainU.Id)
+
+	err = u.SetRefreshToken(ctx, domainU.Id)
+	if err != nil {
+		ctx.String(http.StatusInternalServerError, "JWT系统错误")
+		return
+	}
 	ctx.JSON(http.StatusOK, Result{
 		Code: 4,
 		Msg:  "登录/注册成功",
 	})
 	return
 }
-
