@@ -9,6 +9,7 @@ import (
 	"xws/webook/internal/service"
 	"xws/webook/internal/service/sms/tencent"
 	"xws/webook/internal/web"
+	ijwt "xws/webook/internal/web/jwt"
 	"xws/webook/ioc"
 
 	"github.com/gin-gonic/gin"
@@ -30,6 +31,7 @@ func InitWebServer() *gin.Engine {
 		ioc.InitSMSService,
 		//tencent.NewService,
 		tencent.InitTencentSmsClient,
+		ijwt.NewRedisJWTHandler,
 		web.NewUserHandler,
 		ioc.InitOAuth2WechatService,
 		web.NewOAuth2WechatHandler,

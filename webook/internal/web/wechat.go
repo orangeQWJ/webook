@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"xws/webook/internal/service"
 	"xws/webook/internal/service/oauth2/wechat"
+	ijwt "xws/webook/internal/web/jwt"
 
 	"github.com/gin-gonic/gin"
 )
@@ -11,13 +12,14 @@ import (
 type OAuth2WechatHandler struct {
 	svc     wechat.Service
 	userSvc service.UserService
-	JwtHandler
+	ijwt.Handler
 }
 
-func NewOAuth2WechatHandler(svc wechat.Service, userSvc service.UserService) *OAuth2WechatHandler {
+func NewOAuth2WechatHandler(svc wechat.Service, userSvc service.UserService, jwtHdl ijwt.Handler) *OAuth2WechatHandler {
 	return &OAuth2WechatHandler{
 		svc: svc,
 		userSvc: userSvc,
+		Handler: jwtHdl,
 	}
 }
 
@@ -62,15 +64,7 @@ func (h *OAuth2WechatHandler) Callback(ctx *gin.Context) {
 		})
 		return
 	}
-	err = h.SetJWT(ctx, u.Id)
-	if err != nil {
-		ctx.JSON(http.StatusOK, Result{
-			Code: 5,
-			Msg:  "系统错误",
-		})
-		return
-	}
-	err = h.SetRefreshToken(ctx, u.Id)
+	err = h.SetLoginToken(ctx, u.Id)
 	if err != nil {
 		ctx.String(http.StatusInternalServerError, "JWT系统错误")
 		return

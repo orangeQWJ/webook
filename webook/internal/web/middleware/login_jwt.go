@@ -2,7 +2,8 @@ package middleware
 
 import (
 	"net/http"
-	"xws/webook/internal/web"
+
+	ijwt "xws/webook/internal/web/jwt"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -11,12 +12,12 @@ import (
 // JWT 登录校验
 type LoginJwtMiddlewareBuilder struct {
 	paths []string
-	web.JwtHandler
+	ijwt.Handler
 }
 
-func NewLoginJwtMiddlewareBuilder() *LoginJwtMiddlewareBuilder {
+func NewLoginJwtMiddlewareBuilder(jwtHdl ijwt.Handler) *LoginJwtMiddlewareBuilder {
 	return &LoginJwtMiddlewareBuilder{
-		JwtHandler: *web.NewJwtHandler(),
+		Handler: jwtHdl,
 	}
 
 }
@@ -32,10 +33,10 @@ func (l *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 				return
 			}
 		}
-		tokenStr := web.ExtractToken(ctx)
-		claims := web.UserClaims{}
+		tokenStr := l.ExtractToken(ctx)
+		claims := ijwt.UserClaims{}
 		token, err := jwt.ParseWithClaims(tokenStr, &claims, func(t *jwt.Token) (interface{}, error) {
-			return l.AtKey, nil
+			return ijwt.AtKey, nil
 		})
 
 		if err != nil || !token.Valid {
@@ -47,6 +48,17 @@ func (l *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 		if claims.UserAgent != ctx.Request.UserAgent() {
 			// 严重安全隐患,需要监控
 			// todo 日志监控
+			ctx.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+		// 如果redis崩溃了,可以采用降级服务
+		// 不影响正常用户的登录
+		// 正常用户退出登录时,我会清掉他的header中的token
+		// 他不会走到这一步
+		// 黑客如果把redis搞崩,就可以用已过期的token来登录
+		err = l.CheckSession(ctx, claims.Ssid)
+		if err != nil {
+			// 要么redis有问题,要么已经退出登录了
 			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}

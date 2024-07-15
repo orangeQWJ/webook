@@ -4,6 +4,7 @@ import (
 	"strings"
 	"time"
 	"xws/webook/internal/web"
+	ijwt "xws/webook/internal/web/jwt"
 	"xws/webook/internal/web/middleware"
 	"xws/webook/pkg/ginx/middlewares/ratelimit"
 	limit "xws/webook/pkg/ratelimit"
@@ -21,10 +22,10 @@ func InitWebServer(mdls []gin.HandlerFunc, userHdl *web.UserHandler, oauth2Wecha
 	return service
 }
 
-func InitMiddlewares(redisClient redis.Cmdable) []gin.HandlerFunc {
+func InitMiddlewares(redisClient redis.Cmdable, jwtHdl ijwt.Handler) []gin.HandlerFunc {
 	return []gin.HandlerFunc{
 		corsHdl(),
-		jwtHdl(),
+		GenJwtHdl(jwtHdl),
 		ratelimitHdl(redisClient),
 	}
 }
@@ -34,8 +35,8 @@ func ratelimitHdl(redisClient redis.Cmdable) gin.HandlerFunc {
 	return ratelimit.NewBuilder(limit.NewRedisSlidingWindowLimiter(redisClient, time.Minute, 100)).Build()
 }
 
-func jwtHdl() gin.HandlerFunc {
-	return middleware.NewLoginJwtMiddlewareBuilder().
+func GenJwtHdl(jwtHdl ijwt.Handler) gin.HandlerFunc {
+	return middleware.NewLoginJwtMiddlewareBuilder(jwtHdl).
 		IgnorePaths("/users/signup").
 		IgnorePaths("/users/login").
 		IgnorePaths("/users/login_sms/code/send").
@@ -43,6 +44,7 @@ func jwtHdl() gin.HandlerFunc {
 		IgnorePaths("/oauth2/wechat/authurl").
 		IgnorePaths("/oauth2/wechat/callback").
 		IgnorePaths("/users/refresh_token").
+		IgnorePaths("/users/LogoutJWT").
 		Build()
 }
 
