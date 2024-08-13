@@ -1,4 +1,4 @@
-.PHONY: docker k8s
+.PHONY: docker k8s etcd
 
 docker:
 	@rm webook || true
@@ -18,6 +18,9 @@ k8s:
 	@kubectl apply -f ./k8s-redis-deployment.yaml
 	@kubectl apply -f ./k8s-redis-service.yaml
 	@kubectl apply -f ./k8s-ingress-nginx.yaml
+etcd:
+	etcdctl --endpoints=127.0.0.1:12379 put /webook "$$(cat config/dev.yaml)"
+
 
 run: docker k8s
 

@@ -1,4 +1,4 @@
-version: "3.0"
+#version: "3.0"
 services:
   mysql8:
     image: mysql:8.0
@@ -22,13 +22,13 @@ services:
       - ALLOW_EMPTY_PASSWORD=yes
     ports:
       - "6379:6379"
-    #  etcd:
-    #    image: 'bitnami/etcd:3.5.9'
-    #    environment:
-    #      - ALLOW_NONE_AUTHENTICATION=yes
-    #    ports:
-    ##      所以你要用 12379 端口来连接 etcd
-    #      - 12379:2379
+  etcd:
+    image: "bitnami/etcd:latest"
+    environment:
+      - ALLOW_NONE_AUTHENTICATION=yes
+    ports:
+      #      所以你要用 12379 端口来连接 etcd
+      - 12379:2379
     #  mongo:
     #    image: mongo:6.0
     #    restart: always
